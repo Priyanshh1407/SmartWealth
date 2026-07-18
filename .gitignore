@@ -1,0 +1,15 @@
+# Python standard ignores
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Smart Wealth specific ignores (CRITICAL)
+data/synthetic/transactions_*.csv
+data/synthetic/receipts/*.pdf
+data/tax_corpus/raw_pdfs/*.pdf
+
+# Frontend standard ignores
+frontend/node_modules/
+frontend/dist/
+.DS_Store
