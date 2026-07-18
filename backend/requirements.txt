@@ -1,0 +1,16 @@
+# --- Core API ---
+fastapi
+uvicorn
+
+# --- AI & Orchestration ---
+langgraph
+langgraph-checkpoint-sqlite
+langchain-core
+
+# --- Data Validation ---
+pydantic
+
+# --- Data Generation (Dev Only) ---
+faker
+pyyaml
+playwright
