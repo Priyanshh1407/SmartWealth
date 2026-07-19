@@ -14,3 +14,17 @@ pydantic
 faker
 pyyaml
 playwright
+
+langchain-google-genai
+python-dotenv
+langchain_community
+langchain_chroma
+pypdf
+pytest
+
+# Local Embeddings
+langchain-huggingface==0.1.0
+sentence-transformers==3.0.1
+
+# changed transaction ids 
+# 1095,1071,1192,1016

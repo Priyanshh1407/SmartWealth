@@ -1,5 +1,6 @@
 import sys
 import os
+import csv
 
 # Ensure Python can find the backend/app directory for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -8,23 +9,32 @@ from backend.app.graph.builder import graph
 from backend.app.graph.state import Transaction
 
 def run_crash_test():
-    # 1. Setup a Mock Configuration (Thread ID)
-    # LangGraph uses a thread_id to identify unique user sessions in the DB.
-    config = {"configurable": {"thread_id": "placement_season_demo_01"}}
+    config = {"configurable": {"thread_id": "placement_season_demo_02"}} # Updated thread_id to avoid cache
     
-    # 2. Setup initial dummy state data
-    initial_state = {
-        "thread_id": "placement_season_demo_01",
-        "transactions": [
-            Transaction(
-                transaction_id="TXN-1001",
-                date="2025-05-10",
-                merchant="AWS",
-                amount=4500.00,
-                category="Software Subscriptions",
-                description="Cloud Hosting Fees"
+    # Read the first 5 rows from the CSV
+    csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/synthetic/transactions_2025.csv'))
+    transactions_to_test = []
+    
+    with open(csv_path, mode='r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader):
+            if i >= 5:
+                break
+            transactions_to_test.append(
+                Transaction(
+                    transaction_id=row['transaction_id'],
+                    date=row['date'],
+                    merchant=row['merchant'],
+                    amount=float(row['amount']),
+                    category=row['category'],
+                    description=row['description']
+                )
             )
-        ],
+
+    # Inject the CSV rows into the state
+    initial_state = {
+        "thread_id": "placement_season_demo_02",
+        "transactions": transactions_to_test,
         "receipts_index": {},
         "categorized": [],
         "deductibility_results": [],
@@ -37,20 +47,16 @@ def run_crash_test():
 
     print("🚀 --- TEST RUN 1: STARTING FRESH GRAPH ---")
     
-    # Run the graph until it hits a breakpoint or finishes.
-    # We pass 'None' as the input structure when resuming, but full dict on first run.
     events = graph.stream(initial_state, config, stream_mode="values")
     for event in events:
         print(f"Captured State at Node: {event.get('current_node')}")
         
-    # Check if the graph successfully paused where we told it to
     snapshot = graph.get_state(config)
     print(f"\n⏸️ Graph Status: Is it waiting for input? -> {snapshot.next}")
     
     if "auditor_loop" in snapshot.next:
         print("✅ Success: Graph hit the tripwire and paused perfectly!")
         print("💥 CRASH: Simulating hard process kill ('kill -9')... Closing execution.")
-        # We explicitly return here to exit the script, leaving checkpoints.sqlite intact.
         return config
 
 def resume_after_crash(config):
