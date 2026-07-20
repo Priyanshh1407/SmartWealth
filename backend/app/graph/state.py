@@ -25,6 +25,7 @@ class DeductibilityResult(BaseModel):
 class ClarificationRequest(BaseModel):
     transaction_id: str
     question: str
+    retries: int = 0  # Track how many times we've asked
 
 class AuditReport(BaseModel):
     total_deductions_inr: float

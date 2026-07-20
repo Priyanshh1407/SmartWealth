@@ -20,7 +20,8 @@ python-dotenv
 langchain_community
 langchain_chroma
 pypdf
-pytest
+pytest==8.1.1
+langchain-groq==0.1.3
 
 # Local Embeddings
 langchain-huggingface==0.1.0

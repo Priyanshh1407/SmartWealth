@@ -1,17 +1,33 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from backend.app.graph.state import AuditState, CategorizedTransaction
 from backend.app.tools.categorizer_tools import CategorizationResult, CATEGORIZER_PROMPT
 
 # Load the .env file containing your GEMINI_API_KEY
 load_dotenv()
 
-# Initialize the Gemini model.
-llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview", temperature=0)
+primary_llm = ChatGoogleGenerativeAI(
+        model="gemini-3-flash-preview",
+        temperature=0,
+        max_retries=0
+)
 
-# Bind our strict Pydantic schema to the LLM
-structured_llm = llm.with_structured_output(CategorizationResult)
+# 2. Define the fallback LLM (Groq)
+# Llama 3 8B is incredibly fast and free on Groq, perfect for categorization
+fallback_llm = ChatGroq(
+    model="llama-3.1-8b-instant", 
+    temperature=0,
+    api_key=os.environ.get("GROQ_API_KEY")
+)
+
+# 3. Bind the structured output schema to both models
+# Replace 'CategorizationSchema' with your actual Pydantic model
+primary_structured = primary_llm.with_structured_output(CategorizationResult)
+fallback_structured = fallback_llm.with_structured_output(CategorizationResult)
+
+structured_llm = primary_structured.with_fallbacks([fallback_structured])
 
 def extraction_node(state: AuditState):
     print("🟢 [NODE 1] Running LLM Extraction & Categorization...")
