@@ -13,3 +13,11 @@ data/tax_corpus/raw_pdfs/*.pdf
 frontend/node_modules/
 frontend/dist/
 .DS_Store
+
+# Databases
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+data/chroma_db/
+backend/checkpoints.sqlite*

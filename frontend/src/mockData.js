@@ -1,0 +1,59 @@
+export const mockMetrics = {
+    totalScanned: 260,
+    totalDeductible: 1250450.50,
+    accuracy: 80,
+    actionRequired: 3
+  };
+  
+  export const mockTransactions = [
+    {
+      id: "TXN-1095",
+      date: "2025-01-15",
+      merchant: "Unknown",
+      description: "MISC CHRG",
+      amount: 17133.89,
+      category: "Unknown",
+      confidence: 0.4,
+      status: "unresolved"
+    },
+    {
+      id: "TXN-1187",
+      date: "2025-01-16",
+      merchant: "Paper Source",
+      description: "Right-sized intermediate hardware",
+      amount: 33259.70,
+      category: "Office Supplies",
+      confidence: 0.9,
+      status: "deductible"
+    },
+    {
+      id: "TXN-1038",
+      date: "2025-01-17",
+      merchant: "Apple",
+      description: "Software purchase",
+      amount: 163572.42,
+      category: "Hardware & Equipment",
+      confidence: 1.0,
+      status: "deductible"
+    },
+    {
+      id: "TXN-1292",
+      date: "2025-01-18",
+      merchant: "Local Steakhouse",
+      description: "Dinner",
+      amount: 4500.00,
+      category: "Meals & Entertainment",
+      confidence: 0.9,
+      status: "not_deductible"
+    },
+    {
+      id: "TXN-1192",
+      date: "2025-01-19",
+      merchant: "GitHub",
+      description: "Copilot Subscription",
+      amount: 13463.88,
+      category: "Software Subscriptions",
+      confidence: 0.95,
+      status: "deductible"
+    }
+  ];

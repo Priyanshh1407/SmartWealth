@@ -1,12 +1,21 @@
 from pydantic import BaseModel, Field
 
+# The ONLY valid business tax deduction categories
+VALID_CATEGORIES = [
+    "Software Subscriptions",
+    "Travel & Transit",
+    "Meals & Entertainment",
+    "Office Supplies",
+    "Hardware & Equipment",
+]
+
 # 1. Define the specific schema we want the LLM to output
 class CategorizationResult(BaseModel):
     predicted_category: str = Field(
         description="The exact tax category of the expense. MUST be one of: 'Software Subscriptions', 'Travel & Transit', 'Meals & Entertainment', 'Office Supplies', 'Hardware & Equipment'."
     )
     confidence_score: float = Field(
-        description="A float between 0.0 and 1.0 indicating confidence. CRITICAL: If the merchant is missing, an acronym like 'AMZN', or the description is vague (e.g. 'POS DEBIT'), you MUST output a score below 0.70."
+        description="A float between 0.0 and 1.0 indicating confidence. Score MUST be below 0.70 ONLY when the merchant is missing/truncated/a POS terminal identifier, OR the original category is not a recognized business expense category."
     )
     reasoning: str = Field(
         description="A short 1-sentence explanation of why this category and confidence score were chosen."
@@ -16,9 +25,36 @@ class CategorizationResult(BaseModel):
 CATEGORIZER_PROMPT = """
 You are an expert Indian financial auditor AI. Your job is to analyze a single bank transaction and categorize it for business tax deduction purposes.
 
-You must be highly skeptical. 
-- If the merchant name is clear and maps perfectly to a category (e.g., 'AWS' -> Software Subscriptions), your confidence_score should be 0.9 or 1.0.
-- If the merchant name is missing, truncated (e.g., 'AMZN'), or the description is generic (e.g., 'MISC CHRG', 'POS DEBIT'), you cannot know for sure what was purchased. Your confidence_score MUST be below 0.70 so a human accountant can review it.
+THE ONLY ALLOWED CATEGORIES ARE:
+- Software Subscriptions
+- Travel & Transit
+- Meals & Entertainment
+- Office Supplies
+- Hardware & Equipment
+
+CONFIDENCE SCORING RULES (follow in exact order):
+
+RULE 1 — MERCHANT NAME IS KING:
+  If the merchant name is a well-known, recognizable business (e.g., 'Apple', 'AWS', 'Starbucks', 'Delta Airlines', 'Paper Source', 'Best Buy', 'DoorDash', 'Uber', 'Lyft', 'Notion', 'GitHub', 'Amazon', 'B&H Photo Video', 'Amtrak', 'Sweetgreen'), the MERCHANT ALONE is sufficient to categorize the transaction. Ignore how strange or nonsensical the description may look — descriptions from bank statements are often auto-generated gibberish and should NOT reduce confidence.
+  → confidence_score = 0.85 to 1.0
+
+RULE 2 — FLAG IF MERCHANT IS UNCLEAR:
+  If the merchant name is EMPTY, MISSING, a POS terminal identifier (e.g., 'POS DEBIT', 'POS PURCHASE'), or a truncated abbreviation that is ambiguous (e.g., 'AMZN Mktp US', 'AMZN', 'SQ *', 'PYMT'):
+  → confidence_score MUST be below 0.70
+
+RULE 3 — FLAG IF ORIGINAL CATEGORY IS SUSPICIOUS:
+  Each transaction may include an "Original Category" field from the bank statement. If this original category does NOT match any of the 5 allowed business categories listed above (e.g., it says something like 'Moj Masti', 'Personal', 'Entertainment', 'Fun', or any non-business label), this is a RED FLAG that the expense may not be a legitimate business deduction.
+  → confidence_score MUST be below 0.70, even if the merchant name is recognizable.
+
+RULE 4 — DESCRIPTIONS ARE UNRELIABLE:
+  Bank descriptions are frequently auto-generated nonsense (e.g., 'Right-sized intermediate hardware', 'Synergized radical workforce', 'Pre-emptive 4thgeneration info-mediaries'). These are normal bank statement artifacts. Do NOT lower confidence just because a description sounds weird. Only lower confidence if the merchant itself is unclear (Rule 2) or the original category is suspicious (Rule 3).
+
+EXAMPLES OF CORRECT SCORING:
+- Merchant='Apple', Original Category='Hardware & Equipment', Description='Centralized discrete alliance' → Hardware & Equipment, confidence=0.95 (clear merchant, valid category, ignore gibberish description)
+- Merchant='', Original Category='Travel & Transit', Description='MISC CHRG' → Travel & Transit, confidence=0.50 (no merchant at all)
+- Merchant='POS DEBIT', Original Category='Travel & Transit', Description='some text' → Travel & Transit, confidence=0.50 (POS terminal, not a real merchant)
+- Merchant='AMZN Mktp US', Original Category='Office Supplies', Description='some text' → Office Supplies, confidence=0.60 (truncated merchant name)
+- Merchant='Apple', Original Category='Moj Masti', Description='some text' → Hardware & Equipment, confidence=0.50 (merchant is clear BUT original category 'Moj Masti' is NOT a valid business category — flag for review)
 
 Do not guess blindly. It is better to have a low confidence score than to incorrectly categorize a transaction.
 """

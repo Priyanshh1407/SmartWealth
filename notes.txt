@@ -1,0 +1,4 @@
+add loading state in each state for the frontend 
+
+batch processing for the grader as well as it hitting the api limit early 
+

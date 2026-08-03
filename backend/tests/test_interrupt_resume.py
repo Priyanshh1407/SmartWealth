@@ -10,6 +10,7 @@ if os.path.exists("checkpoints.sqlite"):
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from backend.app.graph.builder import graph
 from backend.app.graph.state import Transaction
+from backend.app.graph.state import DeductibilityResult
 
 def run_crash_test():
     config = {"configurable": {"thread_id": "placement_season_demo_02"}}
@@ -19,7 +20,7 @@ def run_crash_test():
     with open(csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
-            if i >= 5: break
+            if i >= 30: break
             transactions_to_test.append(
                 Transaction(
                     transaction_id=row['transaction_id'], date=row['date'], merchant=row['merchant'],
@@ -67,6 +68,27 @@ def resume_after_crash(config):
                 })
         print(f"🧑‍💻 Injecting human answer: {mock_human_answer}")
         
+        mock_crag_data = [
+            # Claim 1: A good claim with a proper citation
+            DeductibilityResult(
+                transaction_id="TXN-1294", # Amtrak (Travel)
+                is_deductible=True,
+                reasoning="Travel is deductible under section 162.",
+                source_citation="tax_code_doc_page_4" # VALID CITATION
+            ),
+            # Claim 2: A HALLUCINATION! The AI claims it is deductible but forgets the citation!
+            DeductibilityResult(
+                transaction_id="TXN-1039", # AWS (Software)
+                is_deductible=True,
+                reasoning="Software is usually deductible.",
+                source_citation="" # MISSING CITATION!
+            )
+        ]
+    
+        # Force this into the graph's state before we resume
+        graph.update_state(config, {"deductibility_results": mock_crag_data})
+        # --------------------------------------------------------------
+
         print("▶️ Resuming graph execution...")
         # Use Command(resume=...) to properly wake up the interrupt!
         events = graph.stream(Command(resume=mock_human_answer), config, stream_mode="values")

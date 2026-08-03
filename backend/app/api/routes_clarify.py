@@ -4,7 +4,7 @@ from typing import List
 from langgraph.types import Command  # <-- Crucial import for resuming
 
 # Changed app_graph to graph to match your builder.py
-from app.graph.builder import graph
+from backend.app.graph.builder import graph
 
 router = APIRouter()
 
