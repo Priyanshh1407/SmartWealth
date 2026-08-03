@@ -21,3 +21,9 @@ frontend/dist/
 *.sqlite-wal
 data/chroma_db/
 backend/checkpoints.sqlite*
+
+# Evals and Notes
+eval/
+*.md
+notes.txt
+*.log
