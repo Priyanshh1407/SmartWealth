@@ -48,7 +48,10 @@ const AuditorPanel = ({ transaction, onResolved }) => {
 
         <div className="bg-black/40 rounded-lg p-sm border border-tertiary/30 mb-sm relative overflow-hidden shadow-inner shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-tertiary shadow-[0_0_10px_rgba(255,185,95,0.6)]"></div>
-          <span className="font-label-caps text-tertiary mb-xs block">Active Alert</span>
+          <div className="flex justify-between items-center mb-xs">
+            <span className="font-label-caps text-tertiary block">Active Alert</span>
+            <span className="font-mono text-[10px] text-on-surface-variant border border-white/10 px-2 py-0.5 rounded bg-black/50">{transaction.transaction_id || transaction.id}</span>
+          </div>
           <p className="font-body-sm text-[13px] text-on-surface break-words">
             MISC charge of <span className="font-mono text-tertiary">₹{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> from <span className="font-mono text-on-surface font-semibold">{transaction.merchant}</span>
           </p>
@@ -59,7 +62,7 @@ const AuditorPanel = ({ transaction, onResolved }) => {
             <span className="material-symbols-outlined text-[14px]">troubleshoot</span> AI Reasoning
           </span>
           <p className="font-body-sm text-[13px] text-on-surface-variant leading-snug p-sm bg-white/5 rounded-lg border border-white/5">
-            Merchant name missing in known database. Transaction pattern matches <em>Office Rent</em> but lacks official receipt.
+            {transaction.clarificationQuestion || "AI confidence below threshold. Manual review required."}
           </p>
         </div>
 
@@ -72,9 +75,14 @@ const AuditorPanel = ({ transaction, onResolved }) => {
               className="w-full bg-black/50 border border-white/10 border-b-primary focus:ring-0 focus:border-b-primary text-body-sm text-on-surface py-sm px-sm rounded-t-lg appearance-none cursor-pointer hover:bg-black/70 transition-colors"
             >
               <option className="bg-surface" disabled value="">Select category...</option>
-              <option className="bg-surface" value="Office Rent">Office Rent</option>
+              <option className="bg-surface" value="Software Subscriptions">Software Subscriptions</option>
+              <option className="bg-surface" value="Travel & Transit">Travel & Transit</option>
+              <option className="bg-surface" value="Business Meals">Business Meals</option>
+              <option className="bg-surface" value="Entertainment">Entertainment (Non-Deductible)</option>
               <option className="bg-surface" value="Office Supplies">Office Supplies</option>
-              <option className="bg-surface" value="Miscellaneous">Miscellaneous</option>
+              <option className="bg-surface" value="Hardware & Equipment">Hardware & Equipment</option>
+              <option className="bg-surface" value="Professional Fees">Professional Fees</option>
+              <option className="bg-surface" value="Telephone & Internet">Telephone & Internet</option>
               <option className="bg-surface" value="Non-Deductible">Non-Deductible (Personal)</option>
               <option className="bg-surface" value="Other">Other (Custom)</option>
             </select>

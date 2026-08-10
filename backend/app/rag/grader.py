@@ -15,20 +15,20 @@ class GradeResult(BaseModel):
 
 def get_retrieval_grader():
     """Returns a runnable chain that outputs a strict yes/no GradeResult."""
-    # 1. Initialize primary LLM and force it to fail fast
-    primary_llm = ChatGoogleGenerativeAI(
+    # 1. Initialize primary LLM (Groq is much faster, so we use it as primary)
+    primary_llm = ChatGroq(
+        model="llama-3.1-8b-instant", 
+        temperature=0,
+        max_retries=0,
+        timeout=15
+    )
+    
+    # 2. Initialize the fallback LLM (Gemini)
+    fallback_llm = ChatGoogleGenerativeAI(
         model="gemini-3-flash-preview", 
         temperature=0,
         max_retries=0,
-        timeout=30
-    )
-    
-    # 2. Initialize the fallback LLM — use 70b-versatile for better structured output support
-    fallback_llm = ChatGroq(
-        model="llama-3.3-70b-versatile", 
-        temperature=0,
-        max_retries=0,
-        timeout=30
+        timeout=15
     )
 
     # 3. Bind the Pydantic schema to BOTH models individually

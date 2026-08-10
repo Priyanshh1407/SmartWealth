@@ -13,38 +13,27 @@ load_dotenv(env_file)
 if not os.getenv("GOOGLE_API_KEY"):
     raise ValueError("FATAL: Found the .env file, but 'GOOGLE_API_KEY' is missing or spelled wrong inside it.")
 
-# 3. Fix the import path so Python can find the 'app' module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# 3. Fix the import path so Python can find the 'backend' module
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from app.graph.state import Transaction
-from app.graph.nodes.corrective_rag import evaluate_deductibility
+from backend.app.graph.nodes.corrective_rag import _evaluate_category
 
 def run_crag_test():
-    print("🚀 Triggering Node 2 (CRAG) Negative Test...")
+    print("[TEST] Triggering Node 2 (CRAG) Negative Test...")
     
-    ambiguous_transaction = Transaction(
-        transaction_id="tx_999",
-        merchant="New Vegas Transit",
-        description="Monthly Hyper-Loop Pass - New Vegas County",
-        amount=450.00,
-        category="New Vegas County Hyper-Loop Commuter Deduction",
-        date="2025-06-15",
-        confidence_score=0.95
-    )
+    # Test with a category that should NOT be found in the Indian tax corpus
+    result = _evaluate_category("New Vegas County Hyper-Loop Commuter Passes", max_retries=1)
 
-    result = evaluate_deductibility(ambiguous_transaction, max_retries=1)
-
-    # 3. Assert
-    assert result.is_deductible is False, \
-        f"Expected is_deductible to be False, but got '{result.is_deductible}'."
+    assert result["is_deductible"] is False, \
+        f"Expected is_deductible=False, got {result['is_deductible']}"
     
-    assert result.reasoning == "undetermined", \
-        f"Expected reasoning to be 'undetermined', but got '{result.reasoning}'. The model hallucinated an answer."
+    assert result["reasoning"] == "undetermined", \
+        f"Expected 'undetermined', got '{result['reasoning']}'. Model hallucinated."
     
-    assert result.source_citation == "None", \
-        "Expected no source citations for an undetermined expense."
+    assert result["source_citation"] == "None", \
+        "Expected no citations for undetermined expense."
 
-    print("✅ Negative test passed: System successfully flagged 'undetermined' and avoided hallucination fallback.")
+    print("[SUCCESS] Negative test passed: System flagged 'undetermined' for fictitious category.")
 
 if __name__ == "__main__":
     run_crag_test()

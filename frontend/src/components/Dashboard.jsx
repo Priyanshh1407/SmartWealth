@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MetricCard from './MetricCard';
 import TransactionTable from './TransactionTable';
 import AuditorPanel from './AuditorPanel';
+import UploadZone from './UploadZone';
 import useRunStore from '../store/useRunStore';
 
 // Human-readable names for each pipeline node
@@ -21,6 +22,7 @@ const Dashboard = () => {
     status,
     transactions,
     categorized,
+    deductibilityResults,
     pendingClarifications,
     totalTransactions,
     totalDeductible,
@@ -36,6 +38,32 @@ const Dashboard = () => {
   const [showErrors, setShowErrors] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [errorTimerId, setErrorTimerId] = useState(null);
+  const [backendStatus, setBackendStatus] = useState('checking'); // 'checking' | 'online' | 'offline'
+
+  // Check backend health
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const res = await fetch('http://localhost:8000/', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (res.ok) {
+          setBackendStatus('online');
+        } else {
+          setBackendStatus('offline');
+        }
+      } catch (e) {
+        setBackendStatus('offline');
+      }
+    };
+    
+    checkHealth();
+    const interval = setInterval(checkHealth, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Show errors when new ones arrive, auto-dismiss after 5 seconds
   useEffect(() => {
@@ -75,7 +103,8 @@ const Dashboard = () => {
       if (originalTxn) {
         setSelectedTxn({
           ...originalTxn,
-          status: 'unresolved'
+          status: 'unresolved',
+          clarificationQuestion: firstPending.question || "AI confidence below threshold. Manual review required."
         });
       }
     } else if (pendingClarifications.length === 0) {
@@ -89,10 +118,14 @@ const Dashboard = () => {
     const cat = categorized.find(c => c.transaction_id === txn.transaction_id);
     const isPending = pendingClarifications.find(p => (p.transaction_id || p) === txn.transaction_id);
 
-    let txnStatus = 'deductible';
-    if (isPending) txnStatus = 'unresolved';
-    else if (!cat) txnStatus = 'processing';
-    else if (cat.predicted_category === 'Unknown') txnStatus = 'unresolved';
+    const ded = deductibilityResults.find(d => d.transaction_id === txn.transaction_id);
+
+    let txnStatus = 'processing';
+    if (isPending || (cat && cat.predicted_category === 'Unknown')) {
+      txnStatus = 'unresolved';
+    } else if (ded) {
+      txnStatus = ded.is_deductible ? 'deductible' : 'not_deductible';
+    }
 
     return {
       id: txn.transaction_id,
@@ -101,7 +134,8 @@ const Dashboard = () => {
       amount: txn.amount,
       category: cat ? cat.predicted_category : 'Processing...',
       confidence: cat ? cat.confidence_score : 0,
-      status: txnStatus
+      status: txnStatus,
+      clarificationQuestion: isPending?.question || "AI confidence below threshold. Manual review required."
     };
   });
 
@@ -115,6 +149,14 @@ const Dashboard = () => {
     ? (NODE_LABELS[progress.current_node] || progress.current_node)
     : '';
 
+  // Check if we hit a hard rate limit
+  const hasRateLimitError = errors.some(err => 
+    err.toLowerCase().includes('retries exhausted') || 
+    err.toLowerCase().includes('rate limit') || 
+    err.toLowerCase().includes('quota') ||
+    err.toLowerCase().includes('429')
+  );
+
   return (
     <div className="w-full max-w-[1600px] h-[calc(100vh-64px)] mx-auto glass-panel rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] relative flex flex-col p-md md:p-lg gap-md overflow-hidden">
       {/* Top Branding & Action Header */}
@@ -124,12 +166,40 @@ const Dashboard = () => {
             <span className="material-symbols-outlined text-[32px] text-primary">robot_2</span>
             <div className="flex flex-col">
               <span className="font-headline-lg text-[20px] md:text-[24px] font-bold tracking-tighter leading-none text-primary">Smart Wealth</span>
-              <span className="font-label-caps text-[10px] text-primary/70 mt-1">AI Tax Auditor</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-label-caps text-[10px] text-primary/70">AI Tax Auditor</span>
+                {/* Backend Status Light */}
+                <div 
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${
+                    backendStatus === 'online' ? 'bg-green-500/10 border-green-500/30' :
+                    backendStatus === 'offline' ? 'bg-red-500/10 border-red-500/30' :
+                    'bg-yellow-500/10 border-yellow-500/30'
+                  }`}
+                  title={
+                    backendStatus === 'online' ? 'Backend Connected' :
+                    backendStatus === 'offline' ? 'Backend Offline - Start it with python -m backend.app.main' :
+                    'Connecting to Backend...'
+                  }
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    backendStatus === 'online' ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' :
+                    backendStatus === 'offline' ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' :
+                    'bg-yellow-500 shadow-[0_0_5px_#eab308] animate-pulse'
+                  }`}></span>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider ${
+                    backendStatus === 'online' ? 'text-green-500' :
+                    backendStatus === 'offline' ? 'text-red-500' :
+                    'text-yellow-500'
+                  }`}>
+                    {backendStatus === 'online' ? 'API Online' : backendStatus === 'offline' ? 'API Offline' : 'Connecting'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-sm">
-            {/* Reset Button — visible when completed or errored */}
-            {(status === 'completed' || status === 'error' || status === 'idle') && status !== 'loading' && (
+            {/* Reset Button — visible unless loading */}
+            {status !== 'loading' && (
               <button
                 onClick={resetAudit}
                 className="flex items-center justify-center px-sm py-xs bg-white/5 border border-white/10 text-on-surface-variant rounded-lg font-label-caps hover:bg-white/10 hover:text-error transition-all text-[11px]"
@@ -148,16 +218,18 @@ const Dashboard = () => {
                 {showReport ? 'Hide Report' : 'View Report'}
               </button>
             )}
-            <button
-              onClick={runAudit}
-              disabled={status !== 'idle' && status !== 'completed' && status !== 'error'}
-              className="flex items-center justify-center px-md py-xs bg-gradient-to-r from-primary to-primary/50 text-on-primary rounded-lg font-label-caps hover:scale-105 transition-all shrink-0 animate-pulse-glow text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined mr-xs text-[16px]">
-                {status === 'running' || status === 'loading' ? 'autorenew' : 'play_arrow'}
-              </span>
-              {status === 'running' ? 'Running...' : status === 'loading' ? 'Starting...' : status === 'completed' ? 'Run Again' : status === 'error' ? 'Retry' : 'Run Audit'}
-            </button>
+            {/* Run Audit / Status Button — only visible after upload */}
+            {status !== 'idle' && (
+              <button
+                disabled={true}
+                className="flex items-center justify-center px-md py-xs bg-gradient-to-r from-primary to-primary/50 text-on-primary rounded-lg font-label-caps shrink-0 text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined mr-xs text-[16px]">
+                  {status === 'running' || status === 'loading' ? 'autorenew' : 'check_circle'}
+                </span>
+                {status === 'running' ? 'Running...' : status === 'loading' ? 'Starting...' : status === 'completed' ? 'Audit Complete' : status === 'error' ? 'Error' : 'Run Audit'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -198,6 +270,30 @@ const Dashboard = () => {
           </div>
         )}
       </header>
+
+      {/* Persistent Rate Limit Exhausted Banner */}
+      {hasRateLimitError && (
+        <div className="shrink-0 z-10 animate-fade-slide-down mb-sm">
+          <div className="rounded-xl p-md bg-error/20 border border-error/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-sm shadow-[0_0_20px_rgba(255,84,73,0.3)]">
+            <div className="flex items-center gap-sm">
+              <span className="material-symbols-outlined text-[32px] text-error">hourglass_disabled</span>
+              <div>
+                <h3 className="font-title-md text-error font-bold">API Rate Limits Exhausted</h3>
+                <p className="text-[12px] text-on-surface-variant mt-1">
+                  You have hit the maximum number of free tier requests. Please wait a few minutes before trying again. 
+                  Some transactions may be marked as 'Unknown'.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={resetAudit}
+              className="shrink-0 px-md py-xs bg-error text-on-error rounded-lg font-label-caps hover:bg-error/80 transition-colors shadow-lg"
+            >
+              Reset Audit
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error Banner — auto-dismisses after 5s, or click close */}
       {showErrors && errors.length > 0 && (
@@ -352,67 +448,75 @@ const Dashboard = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-gutter overflow-hidden z-10 min-h-0">
-        {/* Left Column: Metrics & Ledger */}
-        <div className="xl:col-span-8 flex flex-col gap-gutter min-h-0">
+        {status === 'idle' && transactions.length === 0 ? (
+          <div className="xl:col-span-12 h-full flex flex-col animate-fade-scale">
+            <UploadZone onFileUpload={runAudit} />
+          </div>
+        ) : (
+          <>
+            {/* Left Column: Metrics & Ledger */}
+            <div className="xl:col-span-8 flex flex-col gap-gutter min-h-0">
 
-          {/* Hero Metrics Grid */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md shrink-0">
-            <MetricCard
-              title="Total Transactions Scanned"
-              value={categorized.length.toLocaleString() + (totalTransactions > 0 ? ` / ${totalTransactions}` : '')}
-              icon="receipt_long"
-              colorClass="text-outline-variant"
-              delayClass="stagger-1"
-            />
-            <MetricCard
-              title="Total Deductible Amount"
-              value={`₹${totalDeductible.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              icon="account_balance_wallet"
-              colorClass="text-secondary"
-              delayClass="stagger-2"
-            />
-            <MetricCard
-              title="AI Confidence Score"
-              value={`${accuracyScore}%`}
-              isCircular={true}
-              delayClass="stagger-3"
-            />
-            <MetricCard
-              title="Action Required"
-              value={pendingClarifications.length.toLocaleString()}
-              icon="warning"
-              colorClass="text-tertiary drop-shadow-[0_0_5px_rgba(255,185,95,0.5)]"
-              delayClass="stagger-4"
-              isWarning={pendingClarifications.length > 0}
-            />
-          </section>
+              {/* Hero Metrics Grid */}
+              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md shrink-0">
+                <MetricCard
+                  title="Total Transactions Scanned"
+                  value={categorized.length.toLocaleString() + (totalTransactions > 0 ? ` / ${totalTransactions}` : '')}
+                  icon="receipt_long"
+                  colorClass="text-outline-variant"
+                  delayClass="stagger-1"
+                />
+                <MetricCard
+                  title="Total Deductible Amount"
+                  value={`₹${totalDeductible.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  icon="account_balance_wallet"
+                  colorClass="text-secondary"
+                  delayClass="stagger-2"
+                />
+                <MetricCard
+                  title="AI Confidence Score"
+                  value={`${accuracyScore}%`}
+                  isCircular={true}
+                  delayClass="stagger-3"
+                />
+                <MetricCard
+                  title="Action Required"
+                  value={pendingClarifications.length.toLocaleString()}
+                  icon="warning"
+                  colorClass="text-tertiary drop-shadow-[0_0_5px_rgba(255,185,95,0.5)]"
+                  delayClass="stagger-4"
+                  isWarning={pendingClarifications.length > 0}
+                />
+              </section>
 
-          {/* Ledger Table */}
-          <section className="glass-card rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden animate-fade-scale ledger-anim">
-            <div className="flex justify-between items-center p-md border-b border-white/5 shrink-0">
-              <h2 className="font-title-md text-on-surface">Transaction Ledger</h2>
-              {status === 'running' && (
-                <span className="text-primary font-label-caps flex items-center gap-xs animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span> Processing...
-                </span>
-              )}
-              {status === 'completed' && (
-                <span className="text-secondary font-label-caps flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[14px]">check_circle</span> Complete
-                </span>
-              )}
+              {/* Ledger Table */}
+              <section className="glass-card rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden animate-fade-scale ledger-anim">
+                <div className="flex justify-between items-center p-md border-b border-white/5 shrink-0">
+                  <h2 className="font-title-md text-on-surface">Transaction Ledger</h2>
+                  {status === 'running' && (
+                    <span className="text-primary font-label-caps flex items-center gap-xs animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span> Processing...
+                    </span>
+                  )}
+                  {status === 'completed' && (
+                    <span className="text-secondary font-label-caps flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[14px]">check_circle</span> Complete
+                    </span>
+                  )}
+                </div>
+                <div className="overflow-y-auto overflow-x-auto p-md pt-0">
+                  <TransactionTable
+                    transactions={tableData}
+                    onResolve={(txn) => setSelectedTxn(txn)}
+                  />
+                </div>
+              </section>
             </div>
-            <div className="overflow-y-auto overflow-x-auto p-md pt-0">
-              <TransactionTable
-                transactions={tableData}
-                onResolve={(txn) => setSelectedTxn(txn)}
-              />
-            </div>
-          </section>
-        </div>
 
-        {/* Right Column: AI Auditor Panel */}
-        <AuditorPanel transaction={selectedTxn} onResolved={() => setSelectedTxn(null)} />
+            {/* Right Column: AI Auditor Panel */}
+            <AuditorPanel transaction={selectedTxn} onResolved={() => setSelectedTxn(null)} />
+          </>
+        )}
       </main>
     </div>
   );

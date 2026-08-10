@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
-from langgraph.types import Command  # <-- Crucial import for resuming
+from langgraph.types import Command
+import threading
 
 # Changed app_graph to graph to match your builder.py
 from backend.app.graph.builder import graph
@@ -39,8 +40,16 @@ async def resume_graph(thread_id: str, answers: List[ClarificationAnswer]):
     # Format answers to pass back into the graph
     formatted_answers = [{"transaction_id": ans.transaction_id, "answer": ans.answer} for ans in answers]
     
-    # FIX: Resume the graph using Command to prevent state amnesia
-    for event in graph.stream(Command(resume=formatted_answers), config, stream_mode="values"):
-        pass 
+    # Run in a background thread so we don't block the FastAPI event loop!
+    # If we block the loop, the frontend cannot poll /state and progress bars freeze.
+    def _resume_graph():
+        try:
+            for _ in graph.stream(Command(resume=formatted_answers), config, stream_mode="values"):
+                pass 
+        except Exception as e:
+            print(f"Error resuming graph: {e}")
+            
+    thread = threading.Thread(target=_resume_graph, daemon=True)
+    thread.start()
         
     return {"status": "resumed"}

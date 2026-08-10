@@ -18,6 +18,7 @@ const TransactionTable = ({ transactions, onResolve }) => {
           const isWarning = txn.status === 'unresolved';
           const isPartial = txn.status === 'partial';
           const isDeductible = txn.status === 'deductible';
+          const isProcessing = txn.status === 'processing';
           
           return (
             <tr 
@@ -55,7 +56,12 @@ const TransactionTable = ({ transactions, onResolve }) => {
                     Partial Deductible
                   </span>
                 )}
-                {!isWarning && !isDeductible && !isPartial && (
+                {isProcessing && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-[10px] border border-primary/20 whitespace-nowrap animate-pulse">
+                    Processing...
+                  </span>
+                )}
+                {!isWarning && !isDeductible && !isPartial && !isProcessing && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full bg-outline-variant/30 text-outline font-label-caps text-[10px] border border-outline-variant/50 whitespace-nowrap">
                     Not Deductible
                   </span>

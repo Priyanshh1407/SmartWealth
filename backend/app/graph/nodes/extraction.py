@@ -137,7 +137,7 @@ def _process_batch(batch: list, thread_id: str = "") -> tuple:
             else:
                 err_msg = f"Gemini batch failed: {e}"
                 print(f"      ⚠️ {err_msg}. Trying Groq batch...")
-                errors.append(err_msg)
+                # Do not append to frontend errors here, because we still have a Groq fallback!
                 break
 
     # --- Attempt 2: Groq batch (same prompt, no rate limit) ---
@@ -160,7 +160,7 @@ def _process_batch(batch: list, thread_id: str = "") -> tuple:
             else:
                 err_msg = f"Groq batch also failed: {e}"
                 print(f"      ⚠️ {err_msg}. Falling back to individual processing.")
-                errors.append(err_msg)
+                # Do not append to frontend errors here, because we still have individual fallback!
                 break
 
     # --- Attempt 3: Individual fallback (structured_llm = Gemini → Groq per transaction) ---

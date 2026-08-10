@@ -91,8 +91,8 @@ def render_pdfs():
         missing_count = total_txns - count
         
         print("\n--- GENERATION COMPLETE ---")
-        print(f"✅ Generated {count} receipt PDFs.")
-        print(f"⚠️ Deliberately skipped {missing_count} receipts (This is your {missing_count/total_txns*100:.1f}% gap rate).")
+        print(f"[SUCCESS] Generated {count} receipt PDFs.")
+        print(f"[WARNING] Deliberately skipped {missing_count} receipts (This is your {missing_count/total_txns*100:.1f}% gap rate).")
 
 if __name__ == "__main__":
     render_pdfs()

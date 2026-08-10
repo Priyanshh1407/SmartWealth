@@ -73,6 +73,10 @@ class ProgressStore:
             entry = self._data.get(thread_id)
             return dict(entry) if entry else None
 
+    def clear_all(self):
+        """Wipes all progress data from memory. Used by /api/reset."""
+        with self._lock:
+            self._data.clear()
 
 # Module-level singleton — import this everywhere
 progress_store = ProgressStore()

@@ -48,3 +48,12 @@ async def get_state(thread_id: str):
         "progress": progress,
         "errors": values.get("errors", []) + (progress.get("errors", []) if progress else []),
     }
+
+@router.post("/reset")
+async def reset_backend():
+    """
+    Called when the user clicks 'Reset Audit' in the UI.
+    Clears the progress store to ensure no stale state lingers.
+    """
+    progress_store.clear_all()
+    return {"status": "backend_reset"}

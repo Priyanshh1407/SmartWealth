@@ -88,8 +88,11 @@ const useRunStore = create((set, get) => ({
   },
 
   // Start the Audit
-  runAudit: async () => {
+  runAudit: async (csvText) => {
     try {
+      if (!csvText) {
+         throw new Error("No CSV data provided");
+      }
       // Generate a fresh thread ID for each new run
       const newThreadId = generateThreadId();
       set({ 
@@ -107,13 +110,6 @@ const useRunStore = create((set, get) => ({
         accuracyScore: 0,
       });
       clearStorage();
-      
-      // Fetch the CSV data
-      const response = await fetch('/transactions_2025.csv');
-      if (!response.ok) {
-        throw new Error("Could not find transactions_2025.csv in public folder");
-      }
-      const csvText = await response.text();
       
       // Parse CSV
       const rows = csvText.split('\n').slice(1).filter(r => r.trim().length > 0);

@@ -30,38 +30,32 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 grader = get_retrieval_grader()
 
 def _rag_call_with_backoff(fn, label: str):
-    """Calls fn() with exponential backoff on rate-limit errors. Returns result or None."""
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            return fn()
-        except Exception as e:
-            err_str = str(e).lower()
-            is_rate_limit = any(k in err_str for k in ("429", "resource_exhausted", "rate", "quota", "504", "503", "502", "500", "timeout"))
-            if is_rate_limit and attempt < MAX_RETRIES:
-                wait = API_DELAY_SECONDS * (2 ** (attempt - 1))  # 4s → 8s → 16s
-                print(f"      ⏳ Rate limit on {label} (attempt {attempt}/{MAX_RETRIES}). Waiting {wait:.0f}s...")
-                time.sleep(wait)
-            else:
-                print(f"      ⚠️ Error on {label} (attempt {attempt}/{MAX_RETRIES}): {e}")
-                return None
-    return None
+    """
+    Executes the LLM chain. The chain already has Groq -> Gemini fallback built-in.
+    If both fail, we stop immediately and inform the user rather than blindly retrying.
+    """
+    try:
+        return fn()
+    except Exception as e:
+        print(f"      [ERROR] Fatal API Error on {label} (Both models exhausted): {e}")
+        raise e
 
 
 def rewrite_query(original_query: str) -> str:
     """Rewrites a query to be better optimized for vector retrieval."""
-    primary_llm = ChatGoogleGenerativeAI(
+    primary_llm = ChatGroq(
+        model="llama-3.1-8b-instant",
+        temperature=0,
+        max_retries=0,
+        timeout=15
+    )
+
+    # Initialize Gemini Fallback
+    fallback_llm = ChatGoogleGenerativeAI(
         model="gemini-3-flash-preview",
         temperature=0,
         max_retries=0,
-        timeout=30
-    )
-
-    # Initialize Groq Fallback
-    fallback_llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        temperature=0,
-        max_retries=0,
-        timeout=30
+        timeout=15
     )
 
     # Create the resilient fallback chain
@@ -74,6 +68,39 @@ def rewrite_query(original_query: str) -> str:
     ])
     chain = re_write_prompt | llm | StrOutputParser()
     return chain.invoke({"question": original_query})
+
+
+def _analyze_deductibility(category: str, passage: str) -> dict:
+    """Uses an LLM to determine if the passage supports deductibility for this category."""
+    import json
+    primary_llm = ChatGroq(
+        model="llama-3.1-8b-instant", temperature=0, max_retries=0, timeout=15
+    )
+    fallback_llm = ChatGoogleGenerativeAI(
+        model="gemini-3-flash-preview", temperature=0, max_retries=0, timeout=15
+    )
+    llm = primary_llm.with_fallbacks([fallback_llm])
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert Indian tax law analyst. Given a tax document passage and a business expense category, determine:
+1. Is this category of expense tax-deductible under the Indian Income Tax Act?
+2. Cite the specific section (e.g., Section 37(1), Section 32).
+3. Provide a one-sentence reasoning.
+
+Output JSON with: {{"is_deductible": true/false, "section": "...", "reasoning": "..."}}
+Do NOT wrap in markdown. Output raw JSON only."""),
+        ("human", "Category: {category}\n\nTax document passage:\n{passage}")
+    ])
+    
+    chain = prompt | llm | StrOutputParser()
+    raw = chain.invoke({"category": category, "passage": passage[:2000]})
+    
+    try:
+        parsed = json.loads(raw.strip().strip("```json").strip("```").strip())
+        return parsed
+    except Exception as e:
+        print(f"      [WARN] JSON parse error in analysis: {e}")
+        return {}
 
 
 def _evaluate_category(category: str, max_retries: int = 1) -> Dict[str, Any]:
@@ -107,11 +134,26 @@ def _evaluate_category(category: str, max_retries: int = 1) -> Dict[str, Any]:
             if relevant_docs:
                 source_citations = [doc.metadata.get('source', 'Unknown Document') for doc in relevant_docs]
                 passage_text = relevant_docs[0].page_content.strip()
+                
+                analysis = _rag_call_with_backoff(
+                    lambda: _analyze_deductibility(category, passage_text),
+                    f"deductibility_analysis/{category}"
+                )
+                
+                if analysis:
+                    return {
+                        "is_deductible": analysis.get("is_deductible", False),
+                        "reasoning": analysis.get("reasoning", "Analysis completed."),
+                        "source_citation": source_citations[0] if source_citations else "Unknown",
+                        "source_passage": passage_text,
+                        "error": None,
+                    }
+                
                 return {
-                    "is_deductible": True,
-                    "reasoning": "Relevant tax documents found.",
-                    "source_citation": source_citations[0] if source_citations else "Unknown",
-                    "source_passage": passage_text,
+                    "is_deductible": False,
+                    "reasoning": "undetermined — analysis failed",
+                    "source_citation": "None",
+                    "source_passage": "",
                     "error": None,
                 }
             
@@ -128,7 +170,7 @@ def _evaluate_category(category: str, max_retries: int = 1) -> Dict[str, Any]:
                     break  # Don't retry if rewrite itself fails
     except Exception as e:
         error_msg = f"CRAG error for category '{category}': {e}"
-        print(f"      ⚠️ {error_msg}")
+        print(f"      [WARN] {error_msg}")
         return {
             "is_deductible": False,
             "reasoning": "undetermined",
@@ -155,15 +197,26 @@ def corrective_rag_node(state: AuditState) -> Dict[str, Any]:
     loop ONCE per unique category instead of once per transaction.
     This reduces API calls from ~900 (300 txns × 3 docs) to ~15 (5 categories × 3 docs).
     """
-    print("🔵 [NODE 2] Running Corrective RAG for deductibility analysis...")
+    print("[NODE 2] Running Corrective RAG for deductibility analysis...")
     
     thread_id = state.get("thread_id", "")
     categorized = state["categorized"]
+    resolved = state.get("resolved_clarifications", {})
     all_errors = list(state.get("errors", []))
+    
+    # --- Step 0: Apply Human-in-the-Loop Answers ---
+    patched_categorized = []
+    for tx in categorized:
+        new_tx = CategorizedTransaction(
+            transaction_id=tx.transaction_id,
+            predicted_category=resolved.get(tx.transaction_id, tx.predicted_category),
+            confidence_score=1.0 if tx.transaction_id in resolved else tx.confidence_score
+        )
+        patched_categorized.append(new_tx)
     
     # --- Step 1: Group transactions by predicted category ---
     category_groups: Dict[str, List[CategorizedTransaction]] = {}
-    for tx in categorized:
+    for tx in patched_categorized:
         category_groups.setdefault(tx.predicted_category, []).append(tx)
     
     unique_categories = list(category_groups.keys())
@@ -194,7 +247,7 @@ def corrective_rag_node(state: AuditState) -> Dict[str, Any]:
         result = _evaluate_category(category)
         category_results[category] = result
         
-        status = "✅ DEDUCTIBLE" if result["is_deductible"] else "❌ Not deductible"
+        status = "[DEDUCTIBLE]" if result["is_deductible"] else "[NOT DEDUCTIBLE]"
         print(f"      Result: {status} | Citation: {result['source_citation']}")
         
         if result["is_deductible"] and result["source_passage"]:
@@ -211,7 +264,7 @@ def corrective_rag_node(state: AuditState) -> Dict[str, Any]:
     
     # --- Step 3: Fan out results to ALL transactions ---
     deductibility_results = []
-    for tx in categorized:
+    for tx in patched_categorized:
         template = category_results.get(tx.predicted_category, {
             "is_deductible": False,
             "reasoning": "undetermined",
@@ -233,5 +286,9 @@ def corrective_rag_node(state: AuditState) -> Dict[str, Any]:
         processed=len(unique_categories),
     )
     
-    print(f"\n   ✅ Corrective RAG complete: {len(deductibility_results)} results from {len(unique_categories)} category lookups.")
-    return {"deductibility_results": deductibility_results, "errors": all_errors}
+    print(f"\n   [SUCCESS] Corrective RAG complete: {len(deductibility_results)} results from {len(unique_categories)} category lookups.")
+    return {
+        "deductibility_results": deductibility_results, 
+        "errors": all_errors,
+        "categorized": patched_categorized
+    }
