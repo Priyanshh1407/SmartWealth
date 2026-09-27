@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+CATEGORIZER_PROMPT_VERSION = 'categorizer-v1'
 
 # The ONLY valid business tax deduction categories
 VALID_CATEGORIES = [
@@ -14,15 +16,28 @@ VALID_CATEGORIES = [
 
 # 1. Define the specific schema we want the LLM to output
 class CategorizationResult(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+
     predicted_category: str = Field(
         description="The exact tax category of the expense. MUST be one of: 'Software Subscriptions', 'Travel & Transit', 'Business Meals', 'Entertainment', 'Office Supplies', 'Hardware & Equipment', 'Professional Fees', 'Telephone & Internet'."
     )
     confidence_score: float = Field(
+        ge=0.0,
+        le=1.0,
         description="A float between 0.0 and 1.0 indicating confidence. Score MUST be below 0.70 ONLY when the merchant is missing/truncated/a POS terminal identifier, OR the original category is not a recognized business expense category."
     )
     reasoning: str = Field(
+        min_length=1,
+        max_length=500,
         description="A short 1-sentence explanation of why this category and confidence score were chosen."
     )
+
+    @field_validator('predicted_category')
+    @classmethod
+    def require_allowed_category(cls, value: str) -> str:
+        if value not in VALID_CATEGORIES:
+            raise ValueError('predicted_category is not allowed')
+        return value
 
 # 2. Define our system prompt instruction
 CATEGORIZER_PROMPT = """

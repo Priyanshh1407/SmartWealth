@@ -1,59 +1,99 @@
-from fastapi import APIRouter
-from backend.app.graph.builder import graph
-from backend.app.progress import progress_store
+import asyncio
+import json
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
+
+from backend.app.api.dependencies import get_workspace_owner, lifecycle_http_error
+from backend.app.runs.runtime import run_service
+from backend.app.shutdown import shutdown_requested
 
 router = APIRouter()
+TERMINAL_STATUSES = {'completed', 'failed', 'cancelled'}
 
-@router.get("/state/{thread_id}")
-async def get_state(thread_id: str):
-    config = {"configurable": {"thread_id": thread_id}}
-    state = graph.get_state(config)
-    
-    # Get real-time progress (updated by nodes during batch processing)
-    progress = progress_store.get(thread_id)
-    
-    if not state.values:
-        return {
-            "status": "not_found",
-            "progress": progress,
-        }
-        
-    values = state.values
-    
-    # We want to return the categorized results, the original transactions, the deductions, and pending clarifications
-    # If the graph is paused, we need to extract pending clarifications from tasks
-    pending_tasks = []
-    if state.next and state.tasks and state.tasks[0].interrupts:
-        pending_tasks = state.tasks[0].interrupts[0].value
-    else:
-        pending_tasks = values.get("pending_clarifications", [])
-    
-    # Determine status based on graph state + progress store
-    if state.next:
-        status = "paused"
-    elif progress and progress.get("completed"):
-        status = "completed"
-    else:
-        status = "running"
-        
+
+def state_delta(
+    previous: dict[str, Any],
+    current: dict[str, Any],
+) -> dict[str, Any]:
+    """Return only top-level fields whose values changed."""
     return {
-        "status": status,
-        "transactions": [t.dict() for t in values.get("transactions", [])] if values.get("transactions") else [],
-        "categorized": [c.dict() for c in values.get("categorized", [])] if values.get("categorized") else [],
-        "deductibility_results": [d.dict() for d in values.get("deductibility_results", [])] if values.get("deductibility_results") else [],
-        "pending_clarifications": pending_tasks,
-        "unresolved_flags": values.get("unresolved_flags", []),
-        "current_node": values.get("current_node", "unknown"),
-        "final_report": values.get("final_report").dict() if values.get("final_report") else None,
-        "progress": progress,
-        "errors": values.get("errors", []) + (progress.get("errors", []) if progress else []),
+        key: value
+        for key, value in current.items()
+        if key not in previous or previous[key] != value
     }
 
-@router.post("/reset")
-async def reset_backend():
-    """
-    Called when the user clicks 'Reset Audit' in the UI.
-    Clears the progress store to ensure no stale state lingers.
-    """
-    progress_store.clear_all()
-    return {"status": "backend_reset"}
+
+def sse_event(event: str, data: dict[str, Any], event_id: int) -> str:
+    payload = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
+    return f'id: {event_id}\nevent: {event}\ndata: {payload}\n\n'
+
+
+@router.get('/state/{run_id}')
+@router.get('/runs/{run_id}')
+async def get_state(
+    run_id: str,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    try:
+        return run_service.state_payload(run_id, owner_id)
+    except Exception as error:
+        raise lifecycle_http_error(error) from error
+
+
+@router.get('/runs/{run_id}/events')
+async def stream_state(
+    run_id: str,
+    request: Request,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    async def events():
+        previous: dict[str, Any] | None = None
+        event_id = 0
+        yield 'retry: 1000\n\n'
+        while (
+            not shutdown_requested.is_set()
+            and not await request.is_disconnected()
+        ):
+            try:
+                current = run_service.state_payload(run_id, owner_id)
+            except Exception as error:
+                http_error = lifecycle_http_error(error)
+                event_id += 1
+                yield sse_event(
+                    'error',
+                    {'status': http_error.status_code, 'detail': http_error.detail},
+                    event_id,
+                )
+                return
+
+            update = current if previous is None else state_delta(previous, current)
+            if update:
+                event_id += 1
+                yield sse_event(
+                    'snapshot' if previous is None else 'delta',
+                    update,
+                    event_id,
+                )
+                previous = current
+
+            if current.get('status') in TERMINAL_STATUSES:
+                event_id += 1
+                yield sse_event(
+                    'end',
+                    {'status': current['status']},
+                    event_id,
+                )
+                return
+
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        events(),
+        media_type='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache, no-transform',
+            'X-Accel-Buffering': 'no',
+        },
+    )

@@ -1,55 +1,92 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List
-from langgraph.types import Command
-import threading
+from typing import Annotated
 
-# Changed app_graph to graph to match your builder.py
-from backend.app.graph.builder import graph
+from fastapi import APIRouter, Body, Depends, Header, Request, Response, status
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from backend.app.api.dependencies import get_workspace_owner, lifecycle_http_error
+from backend.app.tools.categorizer_tools import VALID_CATEGORIES
+from backend.app.runs.runtime import run_service
 
 router = APIRouter()
 
+
 class ClarificationAnswer(BaseModel):
-    transaction_id: str
-    answer: str
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
 
-@router.get("/clarifications/{thread_id}")
-async def get_clarifications(thread_id: str):
-    config = {"configurable": {"thread_id": thread_id}}
-    state = graph.get_state(config)
-    
-    # If the graph is paused, next will contain the node name
-    if not state.next:
-        return {"status": "running or completed", "pending": []}
-        
-    # Safely extract the interrupt data from the tasks
-    pending_tasks = []
-    if state.tasks and state.tasks[0].interrupts:
-        pending_tasks = state.tasks[0].interrupts[0].value
-        
-    return {"status": "paused", "pending": pending_tasks}
+    transaction_id: str = Field(min_length=1, max_length=128)
+    answer: str = Field(min_length=1, max_length=100)
 
-@router.post("/resume/{thread_id}")
-async def resume_graph(thread_id: str, answers: List[ClarificationAnswer]):
-    config = {"configurable": {"thread_id": thread_id}}
-    state = graph.get_state(config)
-    
-    if not state.next:
-        raise HTTPException(status_code=400, detail="Graph is not paused.")
+    @field_validator('answer')
+    @classmethod
+    def validate_answer(cls, value: str) -> str:
+        if value not in VALID_CATEGORIES:
+            raise ValueError('answer must be an allowed category')
+        return value
 
-    # Format answers to pass back into the graph
-    formatted_answers = [{"transaction_id": ans.transaction_id, "answer": ans.answer} for ans in answers]
-    
-    # Run in a background thread so we don't block the FastAPI event loop!
-    # If we block the loop, the frontend cannot poll /state and progress bars freeze.
-    def _resume_graph():
-        try:
-            for _ in graph.stream(Command(resume=formatted_answers), config, stream_mode="values"):
-                pass 
-        except Exception as e:
-            print(f"Error resuming graph: {e}")
-            
-    thread = threading.Thread(target=_resume_graph, daemon=True)
-    thread.start()
-        
-    return {"status": "resumed"}
+
+@router.get('/clarifications/{run_id}')
+async def get_clarifications(
+    run_id: str,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    try:
+        state = run_service.state_payload(run_id, owner_id)
+    except Exception as error:
+        raise lifecycle_http_error(error) from error
+    return {
+        'status': state['status'],
+        'pending': state['pending_clarifications'],
+    }
+
+
+@router.post('/resume/{run_id}', status_code=status.HTTP_202_ACCEPTED)
+async def resume_graph(
+    run_id: str,
+    answers: Annotated[
+        list[ClarificationAnswer],
+        Body(min_length=1),
+    ],
+    response: Response,
+    request: Request,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+    idempotency_key: Annotated[
+        str,
+        Header(alias='Idempotency-Key', min_length=8, max_length=128),
+    ],
+):
+    payload = [answer.model_dump(mode='json') for answer in answers]
+    try:
+        record, replayed = run_service.resume(
+            run_id=run_id,
+            owner_id=owner_id,
+            idempotency_key=idempotency_key,
+            answers=payload,
+            correlation_id=getattr(
+                request.state,
+                'correlation_id',
+                'unassigned',
+            ),
+        )
+    except Exception as error:
+        raise lifecycle_http_error(error) from error
+    response.headers['Idempotency-Replayed'] = str(replayed).lower()
+    return {
+        **record.public_dict(),
+        'replayed': replayed,
+    }
+
+
+@router.get('/runs/{run_id}/audit')
+async def get_human_override_audit(
+    run_id: str,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    try:
+        return {
+            'events': run_service.audit_events(
+                run_id,
+                owner_id,
+            )
+        }
+    except Exception as error:
+        raise lifecycle_http_error(error) from error

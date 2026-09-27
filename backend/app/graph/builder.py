@@ -1,16 +1,16 @@
 import sqlite3
-import os
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver # type: ignore
 from .state import AuditState
+from backend.app.config import get_settings
 
 from backend.app.graph.nodes.extraction import extraction_node  
 from backend.app.graph.nodes.corrective_rag import corrective_rag_node
 from backend.app.graph.nodes.auditor_loop import auditor_loop
 from backend.app.graph.nodes.report import generate_report_node
 
-RECEIPT_THRESHOLD = float(os.environ.get("RECEIPT_THRESHOLD", 500))
-CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", 0.70))
+settings = get_settings()
+CONFIDENCE_THRESHOLD = settings.confidence_threshold
 
 # --- 1. Stub Nodes ---
 
@@ -60,7 +60,26 @@ builder.add_edge("corrective_rag", "report")
 builder.add_edge("report", END)
 
 # --- 3. Attach the Checkpointer ---
-conn = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
-memory = SqliteSaver(conn)
+if settings.checkpoint_database_url:
+    import psycopg
+    from psycopg.rows import dict_row
+    from langgraph.checkpoint.postgres import PostgresSaver
+
+    checkpoint_url = settings.checkpoint_database_url.replace(
+        'postgresql+psycopg://',
+        'postgresql://',
+        1,
+    )
+    conn = psycopg.connect(
+        checkpoint_url,
+        autocommit=True,
+        prepare_threshold=0,
+        row_factory=dict_row,
+    )
+    memory = PostgresSaver(conn)
+    memory.setup()
+else:
+    conn = sqlite3.connect(settings.checkpoint_path, check_same_thread=False)
+    memory = SqliteSaver(conn)
 
 graph = builder.compile(checkpointer=memory)

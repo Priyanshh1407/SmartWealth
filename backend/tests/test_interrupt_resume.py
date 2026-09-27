@@ -3,14 +3,14 @@ import os
 import csv
 from langgraph.types import Command  # <-- Crucial import for resuming
 
-if os.path.exists("checkpoints.sqlite"):
+if False and os.path.exists("checkpoints.sqlite"):
     os.remove("checkpoints.sqlite")
     print("🧹 Wiped old SQLite checkpoints for a clean test run.\n")
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from backend.app.graph.builder import graph
 from backend.app.graph.state import Transaction
-from backend.app.graph.state import DeductibilityResult
+from backend.app.graph.state import DeductibilityResult, LegalEvidence, TaxTreatment
 
 def run_crash_test():
     config = {"configurable": {"thread_id": "placement_season_demo_02"}}
@@ -24,13 +24,13 @@ def run_crash_test():
             transactions_to_test.append(
                 Transaction(
                     transaction_id=row['transaction_id'], date=row['date'], merchant=row['merchant'],
-                    amount=float(row['amount']), category=row['category'], description=row['description']
+                    amount=float(row['amount']), category=row.get('category', ''), description=row['description']
                 )
             )
 
     initial_state = {
         "thread_id": "placement_season_demo_02", "transactions": transactions_to_test,
-        "receipts_index": {}, "categorized": [], "deductibility_results": [],
+        "categorized": [], "deductibility_results": [],
         "pending_clarifications": [], "resolved_clarifications": {}, "unresolved_flags": [],
         "final_report": None, "current_node": "init"
     }
@@ -68,20 +68,25 @@ def resume_after_crash(config):
                 })
         print(f"🧑‍💻 Injecting human answer: {mock_human_answer}")
         
+        document_id = 'test-tax-document'
         mock_crag_data = [
-            # Claim 1: A good claim with a proper citation
             DeductibilityResult(
-                transaction_id="TXN-1294", # Amtrak (Travel)
-                is_deductible=True,
-                reasoning="Travel is deductible under section 162.",
-                source_citation="tax_code_doc_page_4" # VALID CITATION
-            ),
-            # Claim 2: A HALLUCINATION! The AI claims it is deductible but forgets the citation!
-            DeductibilityResult(
-                transaction_id="TXN-1039", # AWS (Software)
-                is_deductible=True,
-                reasoning="Software is usually deductible.",
-                source_citation="" # MISSING CITATION!
+                transaction_id='TXN-1294',
+                treatment=TaxTreatment.DEDUCTIBLE,
+                transaction_amount=100.0,
+                allowed_current_period_amount=100.0,
+                reasoning='Test-only supported treatment.',
+                evidence=LegalEvidence(
+                    corpus_version='test-corpus-v1',
+                    document_id=document_id,
+                    title='Test Tax Document',
+                    page=4,
+                    chunk_id=f'{document_id}:page-4-chunk-1',
+                    section='Test Section',
+                    passage='Test-only evidence passage long enough for strict validation.',
+                    retrieval_score=1.0,
+                ),
+                business_purpose_supported=True,
             )
         ]
     

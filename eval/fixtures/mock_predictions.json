@@ -1,0 +1,56 @@
+[
+  {
+    "transaction_id": "MOCK-001",
+    "retrieval_required": true,
+    "retrieval_supported": true,
+    "true_category": "Software Subscriptions",
+    "predicted_category": "Software Subscriptions",
+    "true_treatment": "deductible",
+    "predicted_treatment": "deductible"
+  },
+  {
+    "transaction_id": "MOCK-002",
+    "retrieval_required": false,
+    "retrieval_supported": false,
+    "true_category": "Travel & Transit",
+    "predicted_category": "Unknown",
+    "true_treatment": "deductible",
+    "predicted_treatment": "undetermined"
+  },
+  {
+    "transaction_id": "MOCK-003",
+    "retrieval_required": true,
+    "retrieval_supported": true,
+    "true_category": "Entertainment",
+    "predicted_category": "Entertainment",
+    "true_treatment": "non_deductible",
+    "predicted_treatment": "non_deductible"
+  },
+  {
+    "transaction_id": "MOCK-004",
+    "retrieval_required": true,
+    "retrieval_supported": true,
+    "true_category": "Hardware & Equipment",
+    "predicted_category": "Hardware & Equipment",
+    "true_treatment": "depreciable",
+    "predicted_treatment": "depreciable"
+  },
+  {
+    "transaction_id": "MOCK-005",
+    "retrieval_required": true,
+    "retrieval_supported": true,
+    "true_category": "Office Supplies",
+    "predicted_category": "Software Subscriptions",
+    "true_treatment": "deductible",
+    "predicted_treatment": "deductible"
+  },
+  {
+    "transaction_id": "MOCK-006",
+    "retrieval_required": false,
+    "retrieval_supported": false,
+    "true_category": "Unknown",
+    "predicted_category": "Unknown",
+    "true_treatment": "undetermined",
+    "predicted_treatment": "undetermined"
+  }
+]

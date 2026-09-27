@@ -1,0 +1,19 @@
+{
+  "actual_receipt_count": null,
+  "dataset_version": "smartwealth-synthetic-v2",
+  "ground_truth_sha256": "507224306c367836f7926534b7a3c15a84e9c81e208278dd39c282517dcb56f4",
+  "public_columns": [
+    "transaction_id",
+    "date",
+    "merchant",
+    "amount",
+    "description"
+  ],
+  "receipt_count": 261,
+  "receipt_ids_sha256": "3aa3bef96d78e79ba390b7b2b75d4db1c753dc4e56391825261060e08a546a34",
+  "schema": "ground_truth_schema.json",
+  "seed": 42,
+  "transaction_count": 300,
+  "transaction_ids_sha256": "549f38e0b124952e69ad941f4e5e604b5cbe1ac5d465983ed5b53a6bea595be6",
+  "transactions_sha256": "8c74ee907680ff09f84d27e0b4b8d2885b9e88e629588b0d511659b851fb2f36"
+}

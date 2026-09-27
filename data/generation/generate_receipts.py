@@ -1,98 +1,183 @@
+import argparse
 import json
-import csv
-import os
-from playwright.sync_api import sync_playwright
+import re
+from contextlib import contextmanager
+from html import escape
+from pathlib import Path
+from typing import Callable, Iterator
 
-def load_data():
-    # 1. Load the secret answer key
-    with open("data/generation/ground_truth_schema.json", "r") as f:
-        ground_truth = json.load(f)
-    
-    # 2. Load the public ledger
-    transactions = {}
-    with open("data/synthetic/transactions_2025.csv", "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            transactions[row["transaction_id"]] = row
-            
-    return ground_truth, transactions
+from data.generation.dataset_contract import (
+    DEFAULT_DATASET_DIR,
+    GROUND_TRUTH_FILENAME,
+    MANAGED_MARKER_FILENAME,
+    MANIFEST_FILENAME,
+    PROJECT_ROOT,
+    TRANSACTIONS_FILENAME,
+    atomic_write_json,
+    clear_generated_files,
+    ensure_managed_directory,
+    load_ground_truth,
+    load_transactions,
+    validate_dataset_artifacts,
+)
 
-def generate_html(txn):
-    # An HTML template with a dark, neon-accented UI for our synthetic receipts
-    html_content = f"""
-    <html>
-    <head>
-        <style>
-            body {{ font-family: 'Courier New', Courier, monospace; background-color: #0d0d0d; color: #00ffcc; padding: 40px; }}
-            .receipt {{ border: 2px dashed #b026ff; padding: 30px; max-width: 350px; margin: auto; box-shadow: 0 0 15px rgba(176, 38, 255, 0.2); }}
-            h1 {{ color: #b026ff; text-align: center; text-transform: uppercase; font-size: 24px; letter-spacing: 2px; }}
-            .details {{ margin-bottom: 20px; font-size: 14px; opacity: 0.8; }}
-            .item {{ display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 16px; }}
-            .total {{ font-weight: bold; border-top: 1px solid #00ffcc; padding-top: 15px; margin-top: 25px; font-size: 18px; color: #ffffff; }}
-        </style>
-    </head>
-    <body>
-        <div class="receipt">
-            <h1>{txn['merchant']}</h1>
-            <div class="details">
-                <p>Date: {txn['date']}</p>
-                <p>TXN ID: {txn['transaction_id']}</p>
-            </div>
-            <hr style="border: 1px dashed #333; margin-bottom: 20px;">
-            <div class="item">
-                <span>{txn['description'][:20]}...</span>
-                <span>₹{txn['amount']}</span>
-            </div>
-            <div class="item total">
-                <span>TOTAL PAID</span>
-                <span>₹{txn['amount']}</span>   
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    return html_content
 
-def render_pdfs():
-    ground_truth, transactions = load_data()
-    
-    # Ensure the receipts output directory exists
-    output_dir = "data/synthetic/receipts"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    print("Initializing PDF engine...")
-    
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
+ReceiptRenderer = Callable[[str, Path], None]
+RECEIPT_NAME_PATTERN = re.compile(r'^TXN-[0-9]+\.pdf$')
+
+
+def generate_html(transaction: dict[str, str]) -> str:
+    merchant = escape(transaction['merchant'])
+    transaction_date = escape(transaction['date'])
+    transaction_id = escape(transaction['transaction_id'])
+    description = escape(transaction['description'][:40])
+    amount = escape(transaction['amount'])
+    return f'''<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <style>
+    body {{ font-family: monospace; padding: 40px; color: #111; }}
+    .receipt {{ border: 2px dashed #555; padding: 30px; max-width: 420px; margin: auto; }}
+    h1 {{ text-align: center; font-size: 22px; }}
+    .row {{ display: flex; justify-content: space-between; margin: 12px 0; }}
+    .total {{ border-top: 1px solid #555; padding-top: 14px; font-weight: bold; }}
+  </style>
+</head>
+<body>
+  <div class='receipt'>
+    <h1>{merchant}</h1>
+    <p>Date: {transaction_date}</p>
+    <p>Transaction: {transaction_id}</p>
+    <div class='row'><span>{description}</span><span>INR {amount}</span></div>
+    <div class='row total'><span>Total paid</span><span>INR {amount}</span></div>
+  </div>
+</body>
+</html>'''
+
+
+@contextmanager
+def playwright_renderer() -> Iterator[ReceiptRenderer]:
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
         page = browser.new_page()
-        
-        count = 0
-        for txn_id, truth in ground_truth.items():
-            # The gap rate logic: Only generate a PDF if has_receipt is True!
-            if truth["has_receipt"]:
-                txn = transactions[txn_id]
-                html = generate_html(txn)
-                
-                # Load the HTML string into the browser
-                page.set_content(html)
-                
-                # Print to PDF
-                pdf_path = f"{output_dir}/{txn_id}.pdf"
-                page.pdf(path=pdf_path, format="A5", print_background=True)
-                
-                count += 1
-                if count % 25 == 0:
-                    print(f"Rendered {count} PDFs so far...")
-                
-        browser.close()
-        
-        # Calculate exactly how many were skipped for our Auditor Loop later
-        total_txns = len(transactions)
-        missing_count = total_txns - count
-        
-        print("\n--- GENERATION COMPLETE ---")
-        print(f"[SUCCESS] Generated {count} receipt PDFs.")
-        print(f"[WARNING] Deliberately skipped {missing_count} receipts (This is your {missing_count/total_txns*100:.1f}% gap rate).")
 
-if __name__ == "__main__":
-    render_pdfs()
+        def render(html: str, path: Path) -> None:
+            page.set_content(html)
+            page.pdf(path=str(path), format='A5', print_background=True)
+
+        try:
+            yield render
+        finally:
+            browser.close()
+
+
+def _adoptable_receipt_names(output_dir: Path) -> set[str]:
+    if not output_dir.exists():
+        return set()
+    return {
+        item.name
+        for item in output_dir.iterdir()
+        if item.is_file() and RECEIPT_NAME_PATTERN.fullmatch(item.name)
+    }
+
+
+def render_receipts(
+    *,
+    dataset_dir: Path,
+    output_dir: Path,
+    initialize_output: bool = False,
+    renderer: ReceiptRenderer | None = None,
+) -> dict:
+    dataset_dir = dataset_dir.resolve()
+    output_dir = ensure_managed_directory(
+        output_dir,
+        allowed_root=dataset_dir,
+        initialize=initialize_output,
+        allowed_existing_names=_adoptable_receipt_names(output_dir),
+    )
+    ground_truth = load_ground_truth(dataset_dir / GROUND_TRUTH_FILENAME)
+    transactions = {
+        row['transaction_id']: row
+        for row in load_transactions(dataset_dir / TRANSACTIONS_FILENAME)
+    }
+    truth_rows = ground_truth['transactions']
+    expected_ids = {
+        row['transaction_id'] for row in truth_rows if row['has_receipt']
+    }
+    if not expected_ids <= set(transactions):
+        missing = sorted(expected_ids - set(transactions))
+        raise ValueError(f'Receipt transactions missing from CSV: {missing}')
+
+    removed = clear_generated_files(output_dir, '*.pdf')
+
+    def generate(active_renderer: ReceiptRenderer) -> None:
+        for transaction_id in sorted(expected_ids):
+            transaction = transactions[transaction_id]
+            active_renderer(
+                generate_html(transaction),
+                output_dir / f'{transaction_id}.pdf',
+            )
+
+    if renderer is None:
+        with playwright_renderer() as active_renderer:
+            generate(active_renderer)
+    else:
+        generate(renderer)
+
+    validation = validate_dataset_artifacts(
+        dataset_dir,
+        receipts_dir=output_dir,
+    )
+    manifest_path = dataset_dir / MANIFEST_FILENAME
+    manifest = (
+        json.loads(manifest_path.read_text(encoding='utf-8'))
+        if manifest_path.exists()
+        else {}
+    )
+    manifest.update(validation)
+    atomic_write_json(manifest_path, manifest)
+    return {
+        **validation,
+        'removed_stale_receipts': len(removed),
+        'receipt_output_directory': str(output_dir),
+        'managed_marker': str(output_dir / MANAGED_MARKER_FILENAME),
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description='Render receipts for a validated SmartWealth dataset.'
+    )
+    parser.add_argument('--dataset-dir', type=Path, default=DEFAULT_DATASET_DIR)
+    parser.add_argument(
+        '--output-dir',
+        type=Path,
+        default=DEFAULT_DATASET_DIR / 'receipts',
+    )
+    parser.add_argument(
+        '--initialize-output',
+        action='store_true',
+        help='Adopt an existing receipt directory only if every entry is a generated PDF.',
+    )
+    args = parser.parse_args()
+    result = render_receipts(
+        dataset_dir=args.dataset_dir,
+        output_dir=args.output_dir,
+        initialize_output=args.initialize_output,
+    )
+    actual_receipt_count = result['actual_receipt_count']
+    removed_stale_receipts = result['removed_stale_receipts']
+    receipt_ids_hash = result['receipt_ids_sha256']
+    print(
+        f'Rendered {actual_receipt_count} receipts; '
+        f'removed {removed_stale_receipts} previous PDFs.'
+    )
+    print(f'Receipt ID SHA-256: {receipt_ids_hash}')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

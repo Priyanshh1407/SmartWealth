@@ -19,7 +19,6 @@ def run_pipeline_cli():
     # 1. Load Data
     project_root = Path(__file__).resolve().parent.parent.parent
     csv_path = project_root / 'data' / 'synthetic' / 'transactions_2025.csv'
-    receipts_dir = project_root / 'data' / 'synthetic' / 'receipts'
     
     transactions = []
     with open(csv_path, mode='r', encoding='utf-8') as f:
@@ -34,20 +33,12 @@ def run_pipeline_cli():
                     date=row['date'], 
                     merchant=row['merchant'],
                     amount=float(row['amount']), 
-                    category=row['category'], 
+                    category=row.get('category', ''),
                     description=row['description']
                 )
             )
             
-    # 2. Build Receipts Index
-    receipts_index = {}
-    if receipts_dir.exists():
-        for pdf_file in receipts_dir.glob("*.pdf"):
-            txn_id = pdf_file.stem # e.g. TXN-1234
-            receipts_index[txn_id] = str(pdf_file)
-            
     print(f"Loaded {len(transactions)} transactions.")
-    print(f"Found {len(receipts_index)} receipts in index.")
     
     # 3. Initialize State — use a unique thread_id every run to avoid stale checkpoints
     run_id = uuid.uuid4().hex[:8]
@@ -55,7 +46,6 @@ def run_pipeline_cli():
     initial_state = {
         "thread_id": f"run_{run_id}",
         "transactions": transactions,
-        "receipts_index": receipts_index,
         "categorized": [],
         "deductibility_results": [],
         "pending_clarifications": [],
@@ -111,10 +101,7 @@ def run_pipeline_cli():
                         print(f"   Context: {orig.date} | {orig.merchant} | ₹{orig.amount} | {orig.description}")
                         
                     # Ask user for input
-                    if "Missing receipt" in q:
-                        prompt_msg = f"   Enter answer (e.g. 'Lost it, but it was for an office desk' or 'idk'): "
-                    else:
-                        prompt_msg = f"   Enter answer (e.g. 'Business lunch with a client' or 'idk'): "
+                    prompt_msg = "   Enter an allowed category (or 'idk'): "
                         
                     answer = input(prompt_msg)
                     human_answers.append({"transaction_id": txn_id, "answer": answer})

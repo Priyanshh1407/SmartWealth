@@ -1,0 +1,94 @@
+{
+  "after": {
+    "categorization_accuracy": 0.6666666666666666,
+    "categorization_macro_f1": 0.5555555555555555,
+    "confusion_matrix": {
+      "labels": [
+        "Entertainment",
+        "Hardware & Equipment",
+        "Office Supplies",
+        "Software Subscriptions",
+        "Travel & Transit",
+        "Unknown"
+      ],
+      "matrix": [
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ]
+      ]
+    },
+    "coverage": 0.6666666666666666,
+    "estimated_cost_usd": 0.0,
+    "label": "Controlled provider-free fixture",
+    "latency_seconds": 0.0,
+    "retrieval_faithfulness": {
+      "evaluated_claims": 8,
+      "faithfulness": 1.0,
+      "supported_claims": 8
+    },
+    "scope": "Deterministic harness validation only; this is not a live-model or tax-law accuracy claim.",
+    "source": "eval/fixtures/mock_predictions.json",
+    "treatment_accuracy": 0.8333333333333334,
+    "treatment_macro_f1": 0.8666666666666667
+  },
+  "before": {
+    "categorization_accuracy": 0.1962,
+    "categorization_macro_f1": null,
+    "coverage": null,
+    "estimated_cost_usd": null,
+    "label": "Historical pre-remediation baseline",
+    "latency_seconds": null,
+    "retrieval_faithfulness": null,
+    "scope": "Legacy live evaluation; raw predictions unavailable.",
+    "source": "Historical repository evaluation record",
+    "treatment_accuracy": 0.3038,
+    "treatment_macro_f1": null
+  },
+  "generated_at": "2026-09-25T00:00:00+00:00",
+  "schema_version": "evaluation-dashboard-v1"
+}

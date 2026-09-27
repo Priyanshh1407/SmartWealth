@@ -1,288 +1,369 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import { apiRequest, streamRun } from '../api/client';
 
-// The base URL for our FastAPI backend
-const API_BASE = 'http://localhost:8000/api';
-
-// --- localStorage Persistence ---
 const STORAGE_KEY = 'smart-wealth-audit-state';
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled']);
+
+const generateIdempotencyKey = () => (
+  globalThis.crypto?.randomUUID?.()
+  || `request-${Date.now()}-${Math.random().toString(36).slice(2)}`
+);
 
 function saveToStorage(state) {
   try {
-    const snapshot = {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
       threadId: state.threadId,
       status: state.status,
-      transactions: state.transactions,
-      categorized: state.categorized,
-      deductibilityResults: state.deductibilityResults,
-      pendingClarifications: state.pendingClarifications,
-      unresolvedFlags: state.unresolvedFlags,
-      totalTransactions: state.totalTransactions,
-      totalDeductible: state.totalDeductible,
-      accuracyScore: state.accuracyScore,
       progress: state.progress,
       errors: state.errors,
-      finalReport: state.finalReport,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch (e) {
-    // localStorage might be full or unavailable — silently ignore
+    }));
+  } catch {
+    // Session recovery is best-effort; financial records remain server-side.
   }
 }
 
 function loadFromStorage() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
     return null;
   }
 }
 
 function clearStorage() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (e) {
-    // ignore
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore unavailable browser storage.
   }
 }
 
-// --- Initialize from saved state or defaults ---
+function waitForReconnect(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, milliseconds);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
+}
+
+export function metricsFor(categorized, deductibility, humanOverrideIds) {
+  const overrideIds = new Set(humanOverrideIds);
+  const modelOnly = categorized.filter((item) => !overrideIds.has(item.transaction_id));
+  const averageModelConfidence = modelOnly.length
+    ? Math.round(
+      modelOnly.reduce((sum, item) => sum + (Number(item.confidence_score) || 0), 0)
+      / modelOnly.length * 100,
+    )
+    : 0;
+  const totalDeductible = deductibility.reduce(
+    (sum, item) => sum + (Number(item.allowed_current_period_amount) || 0),
+    0,
+  );
+  return { averageModelConfidence, totalDeductible };
+}
+
 const saved = loadFromStorage();
-const generateThreadId = () => Math.random().toString(36).substring(2, 10);
 
 const useRunStore = create((set, get) => ({
-  threadId: saved?.threadId || generateThreadId(),
+  threadId: saved?.threadId || null,
   status: saved?.status || 'idle',
-  
-  // Pipeline Data
-  transactions: saved?.transactions || [],
-  categorized: saved?.categorized || [],
-  deductibilityResults: saved?.deductibilityResults || [],
-  pendingClarifications: saved?.pendingClarifications || [],
-  unresolvedFlags: saved?.unresolvedFlags || [],
-  
-  // Dashboard Metrics
-  totalTransactions: saved?.totalTransactions || 0,
-  totalDeductible: saved?.totalDeductible || 0,
-  accuracyScore: saved?.accuracyScore || 0,
-  
-  // Real-time progress from backend
+  transactions: [],
+  categorized: [],
+  deductibilityResults: [],
+  pendingClarifications: [],
+  unresolvedFlags: [],
+  humanOverrideIds: [],
+  runTimeline: [],
+  auditTrail: [],
+  evaluationSummary: null,
+  evaluationError: '',
+  totalTransactions: 0,
+  totalDeductible: 0,
+  averageModelConfidence: 0,
   progress: saved?.progress || null,
   errors: saved?.errors || [],
+  finalReport: null,
+  streamController: null,
+  streamState: 'disconnected',
+  reconnectAttempt: 0,
 
-  // Final report from backend
-  finalReport: saved?.finalReport || null,
-  
-  // Control interval for polling
-  pollInterval: null,
+  applyServerUpdate: (update) => {
+    const current = get();
+    const categorized = update.categorized ?? current.categorized;
+    const deductibilityResults = (
+      update.deductibility_results ?? current.deductibilityResults
+    );
+    const humanOverrideIds = update.human_override_ids ?? current.humanOverrideIds;
+    const calculated = metricsFor(
+      categorized,
+      deductibilityResults,
+      humanOverrideIds,
+    );
+    const next = {
+      status: update.status ?? current.status,
+      transactions: update.transactions ?? current.transactions,
+      categorized,
+      deductibilityResults,
+      pendingClarifications: (
+        update.pending_clarifications ?? current.pendingClarifications
+      ),
+      unresolvedFlags: update.unresolved_flags ?? current.unresolvedFlags,
+      humanOverrideIds,
+      runTimeline: update.run_timeline ?? current.runTimeline,
+      auditTrail: update.audit_trail ?? current.auditTrail,
+      progress: update.progress ?? current.progress,
+      errors: update.errors ?? current.errors,
+      finalReport: update.final_report ?? current.finalReport,
+      totalTransactions: (update.transactions ?? current.transactions).length
+        || current.totalTransactions,
+      ...calculated,
+    };
+    set(next);
+    saveToStorage({ ...current, ...next });
+  },
 
-  // Auto-resume polling if we were mid-run when the page was reloaded
-  resumeIfNeeded: () => {
-    const { status } = get();
-    if (status === 'running' || status === 'loading' || status === 'paused') {
-      console.log('[SmartWealth] Resuming polling after page reload...');
-      get().startPolling();
+  resumeIfNeeded: async () => {
+    const { status, threadId } = get();
+    if (!threadId || status === 'idle') return false;
+
+    try {
+      const snapshot = await apiRequest(`/runs/${threadId}`);
+      get().applyServerUpdate(snapshot);
+      if (!TERMINAL_STATUSES.has(snapshot.status || status)) {
+        get().startStream();
+      }
+      return true;
+    } catch (error) {
+      // Active runs retain the existing reconnect loop for temporary outages.
+      if (!TERMINAL_STATUSES.has(status)) {
+        get().startStream();
+        return true;
+      }
+      set({ errors: [error.message || 'Saved audit could not be restored.'] });
+      return false;
     }
   },
 
-  // Start the Audit
-  runAudit: async (csvText) => {
+  runAudit: async (transactions, { demoScenario = null } = {}) => {
     try {
-      if (!csvText) {
-         throw new Error("No CSV data provided");
+      if (!Array.isArray(transactions) || transactions.length === 0) {
+        throw new Error('At least one validated transaction is required.');
       }
-      // Generate a fresh thread ID for each new run
-      const newThreadId = generateThreadId();
-      set({ 
-        status: 'loading', 
-        errors: [], 
-        progress: null, 
+      get().stopStream();
+      clearStorage();
+      set({
+        status: 'loading',
+        errors: [],
+        progress: null,
         finalReport: null,
-        threadId: newThreadId,
+        threadId: null,
         transactions: [],
         categorized: [],
         deductibilityResults: [],
         pendingClarifications: [],
         unresolvedFlags: [],
+        humanOverrideIds: [],
+        runTimeline: [],
+        auditTrail: [],
+        totalTransactions: transactions.length,
         totalDeductible: 0,
-        accuracyScore: 0,
+        averageModelConfidence: 0,
       });
-      clearStorage();
-      
-      // Parse CSV
-      const rows = csvText.split('\n').slice(1).filter(r => r.trim().length > 0);
-      const parsedTxns = rows.map(row => {
-        // Simple CSV parse handling commas inside quotes
-        const match = row.match(/(\".*?\"|[^",]+)(?=\s*,|\s*$)/g);
-        if (!match) return null;
-        const [transaction_id, date, merchant, amount, category, description] = match.map(s => s.replace(/(^"|"$)/g, ''));
-        return { transaction_id, date, merchant, amount: parseFloat(amount), category, description };
-      }).filter(Boolean);
-
-      // The backend now returns immediately and runs graph in background
-      await axios.post(`${API_BASE}/run`, {
-        thread_id: newThreadId,
-        transactions: parsedTxns
+      const response = await apiRequest('/run', {
+        method: 'POST',
+        body: {
+          transactions,
+          data_processing_consent: true,
+          ...(demoScenario ? { demo_scenario: demoScenario } : {}),
+        },
+        headers: { 'Idempotency-Key': generateIdempotencyKey() },
       });
-
-      set({ status: 'running', totalTransactions: parsedTxns.length });
-      
-      // Start polling
-      get().startPolling();
-
+      set({ threadId: response.run_id, status: response.status });
+      saveToStorage({ ...get() });
+      get().startStream();
+      return true;
     } catch (error) {
-      console.error("Failed to start audit", error);
-      set({ status: 'error', errors: [error.message || 'Failed to start audit'] });
+      set({ status: 'error', errors: [error.message || 'Failed to start audit.'] });
+      return false;
     }
   },
 
-  // Start polling the backend state
-  startPolling: () => {
-    if (get().pollInterval) return;
-    
-    const interval = setInterval(async () => {
-      const threadId = get().threadId;
-      try {
-        const res = await axios.get(`${API_BASE}/state/${threadId}`);
-        const data = res.data;
-        
-        if (data.status === 'not_found') return;
+  startStream: () => {
+    if (get().streamController || !get().threadId) return;
+    const controller = new AbortController();
+    set({ streamController: controller, streamState: 'connecting' });
 
-        // Calculate metrics
-        const categorized = data.categorized || [];
-        const deductibility = data.deductibility_results || [];
-        const transactions = data.transactions || [];
-        
-        // Calculate Total Deductible Amount from actual transaction amounts
-        const totalDeductible = deductibility.reduce((sum, item) => {
-           if (item.is_deductible) {
-               // Find original transaction to get the amount
-               const txn = transactions.find(t => t.transaction_id === item.transaction_id);
-               if (txn) return sum + txn.amount;
-           }
-           return sum;
-        }, 0);
-
-        // Calculate real accuracy: average confidence of categorized transactions
-        const accuracyScore = categorized.length > 0 
-          ? Math.round(
-              categorized.reduce((sum, c) => sum + (c.confidence_score || 0), 0) 
-              / categorized.length * 100
-            )
-          : 0;
-
-        // Determine the frontend status from backend data
-        let newStatus = 'running';
-        if (data.status === 'paused') {
-          newStatus = 'paused';
-        } else if (data.status === 'completed') {
-          newStatus = 'completed';
-        } else if (data.progress && data.progress.completed) {
-          newStatus = 'completed';
+    const connect = async () => {
+      let attempt = 0;
+      while (!controller.signal.aborted) {
+        const runId = get().threadId;
+        if (!runId || TERMINAL_STATUSES.has(get().status)) break;
+        set({
+          streamState: attempt ? 'reconnecting' : 'connecting',
+          reconnectAttempt: attempt,
+        });
+        let receivedEvent = false;
+        try {
+          await streamRun(runId, {
+            signal: controller.signal,
+            onEvent: ({ event, data }) => {
+              receivedEvent = true;
+              attempt = 0;
+              set({ streamState: 'connected', reconnectAttempt: 0 });
+              if (event === 'snapshot' || event === 'delta') {
+                get().applyServerUpdate(data);
+              } else if (event === 'error') {
+                set({ errors: [data.detail || 'State stream failed.'] });
+              }
+            },
+          });
+          if (TERMINAL_STATUSES.has(get().status)) break;
+          if (!receivedEvent) throw new Error('State stream ended before sending data.');
+          throw new Error('State stream disconnected.');
+        } catch (error) {
+          if (error.name === 'AbortError' || controller.signal.aborted) break;
+          if (error.status === 401 || error.status === 404) {
+            set({
+              status: 'error',
+              streamState: 'disconnected',
+              errors: [error.message],
+            });
+            break;
+          }
+          attempt += 1;
+          const delay = Math.min(1000 * (2 ** (attempt - 1)), 10_000);
+          set({
+            streamState: 'reconnecting',
+            reconnectAttempt: attempt,
+            errors: [`Live updates disconnected. Retrying in ${delay / 1000}s.`],
+          });
+          try {
+            await waitForReconnect(delay, controller.signal);
+          } catch {
+            break;
+          }
         }
-
-        const newState = {
-          status: newStatus,
-          transactions: transactions,
-          categorized: categorized,
-          deductibilityResults: deductibility,
-          pendingClarifications: data.pending_clarifications || [],
-          unresolvedFlags: data.unresolved_flags || [],
-          totalDeductible,
-          accuracyScore,
-          progress: data.progress || null,
-          errors: data.errors || [],
-          finalReport: data.final_report || null,
-        };
-
-        set(newState);
-
-        // Persist to localStorage so reload doesn't lose data
-        saveToStorage({ ...get() });
-
-        // Stop polling if completed
-        if (newStatus === 'completed') {
-          get().stopPolling();
-        }
-
-      } catch (err) {
-        console.error("Polling error", err);
       }
-    }, 2000);
-    
-    set({ pollInterval: interval });
+      if (get().streamController === controller) {
+        set({ streamController: null, streamState: 'disconnected' });
+      }
+    };
+    void connect();
   },
 
-  stopPolling: () => {
-    const interval = get().pollInterval;
-    if (interval) {
-      clearInterval(interval);
-      set({ pollInterval: null });
-    }
+  stopStream: () => {
+    get().streamController?.abort();
+    set({ streamController: null, streamState: 'disconnected', reconnectAttempt: 0 });
   },
 
-  // Resolve a single transaction
+  retryStream: () => {
+    get().stopStream();
+    get().startStream();
+  },
+
   resolveTransaction: async (transactionId, categoryAnswer) => {
-    const threadId = get().threadId;
     try {
-      await axios.post(`${API_BASE}/resume/${threadId}`, [
-        {
-          transaction_id: transactionId,
-          answer: categoryAnswer
-        }
-      ]);
-      
-      // Instantly remove from pending locally to make UI snappy
+      const response = await apiRequest(`/resume/${get().threadId}`, {
+        method: 'POST',
+        body: [{ transaction_id: transactionId, answer: categoryAnswer }],
+        headers: { 'Idempotency-Key': generateIdempotencyKey() },
+      });
       set((state) => ({
-        pendingClarifications: state.pendingClarifications.filter(p => {
-           const tId = p.transaction_id || p;
-           return tId !== transactionId;
-        })
+        status: response.status,
+        pendingClarifications: state.pendingClarifications.filter(
+          (item) => (item.transaction_id || item) !== transactionId,
+        ),
       }));
-      
+      return { ok: true };
     } catch (error) {
-      console.error("Failed to resume transaction", error);
+      const message = error.message || 'Failed to submit clarification.';
+      set((state) => ({ errors: [...state.errors, message] }));
+      return { ok: false, error: message };
     }
   },
 
-  // Reset everything — clear backend checkpoints + frontend state
-  resetAudit: async () => {
+  cancelAudit: async () => {
+    if (!get().threadId) return false;
     try {
-      // Stop any active polling
-      get().stopPolling();
+      const response = await apiRequest(`/runs/${get().threadId}/cancel`, {
+        method: 'POST',
+      });
+      get().applyServerUpdate(response);
+      get().stopStream();
+      return true;
+    } catch (error) {
+      set({ errors: [error.message || 'Failed to cancel audit.'] });
+      return false;
+    }
+  },
 
-      // Tell backend to clear SQLite checkpoints
-      await axios.post(`${API_BASE}/reset`);
-      
-      // Clear localStorage
+  runFailureDemo: async () => get().runAudit(
+    [
+      {
+        date: '2025-03-14',
+        merchant: 'GitHub',
+        amount: 2499,
+        description: 'Team development subscription',
+      },
+      {
+        date: '2025-03-15',
+        merchant: 'Unknown Counterparty',
+        amount: 1800,
+        description: 'Ambiguous business expense requiring review',
+      },
+    ],
+    { demoScenario: 'provider_429_fallback' },
+  ),
+
+  loadEvaluation: async () => {
+    try {
+      const summary = await apiRequest('/evaluation/summary');
+      set({ evaluationSummary: summary, evaluationError: '' });
+      return summary;
+    } catch (error) {
+      const message = error.message || 'Evaluation summary is unavailable.';
+      set({ evaluationError: message });
+      return null;
+    }
+  },
+
+  resetAudit: async () => {
+    const { threadId, status } = get();
+    try {
+      if (threadId) {
+        const active = ['queued', 'running', 'waiting_for_input'].includes(status);
+        if (active) await apiRequest(`/runs/${threadId}/cancel`, { method: 'POST' });
+        await apiRequest(`/runs/${threadId}`, { method: 'DELETE' });
+      }
+      get().stopStream();
       clearStorage();
-      
-      // Reset all store state
       set({
-        threadId: generateThreadId(),
+        threadId: null,
         status: 'idle',
         transactions: [],
         categorized: [],
         deductibilityResults: [],
         pendingClarifications: [],
         unresolvedFlags: [],
+        humanOverrideIds: [],
+        runTimeline: [],
+        auditTrail: [],
         totalTransactions: 0,
         totalDeductible: 0,
-        accuracyScore: 0,
+        averageModelConfidence: 0,
         progress: null,
         errors: [],
         finalReport: null,
-        pollInterval: null,
       });
-      
-      console.log('[SmartWealth] Audit reset complete.');
+      return true;
     } catch (error) {
-      console.error("Failed to reset audit", error);
+      set({ errors: [error.message || 'Failed to reset audit. Retry shortly.'] });
+      return false;
     }
-  }
-
+  },
 }));
 
 export default useRunStore;

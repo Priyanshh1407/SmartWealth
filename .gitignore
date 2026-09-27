@@ -1,17 +1,38 @@
-# Python standard ignores
+# Python environments, caches, coverage, and local configuration
 venv/
-__pycache__/
-*.pyc
+.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 .env
+.env.*
+!.env.example
+!frontend/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+secrets.*
 
 # Smart Wealth specific ignores (CRITICAL)
 data/synthetic/transactions_*.csv
 data/synthetic/receipts/*.pdf
 data/tax_corpus/raw_pdfs/*.pdf
+/manual-*
+data/manual-*/
+eval/manual-*/
 
 # Frontend standard ignores
 frontend/node_modules/
 frontend/dist/
+frontend/coverage/
+frontend/.vite/
 .DS_Store
 
 # Databases
@@ -23,7 +44,29 @@ data/chroma_db/
 backend/checkpoints.sqlite*
 
 # Evals and Notes
-eval/
+eval/*
+!eval/__init__.py
+!eval/evaluation.py
+!eval/metrics.py
+!eval/run_eval.py
+!eval/run_mock_baseline.py
+!eval/fixtures/
+!eval/fixtures/mock_predictions.json
+!eval/evaluation_dashboard.json
 *.md
+!README.md
+!CONTRIBUTING.md
+!SECURITY.md
+!docs/*.md
+!docs/**/*.md
+# Interview preparation material stays local rather than being published.
+*INTERVIEW*.md
+*interview*.md
+PROJECT_INTERVIEW_REPORT.md
+SMARTWEALTH_INTERVIEW_REPORT.md
+PROJECT_PLAN.md
+SmartWealth_Project_Plan.md
+docs/phase_logs/
+backups/
 notes.txt
 *.log

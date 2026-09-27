@@ -1,10 +1,10 @@
-import os
 from langgraph.types import interrupt
 from backend.app.graph.state import AuditState
 from backend.app.progress import progress_store
+from backend.app.config import get_settings
 
-RECEIPT_THRESHOLD = float(os.environ.get("RECEIPT_THRESHOLD", 500))
-CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", 0.70))
+settings = get_settings()
+CONFIDENCE_THRESHOLD = settings.confidence_threshold
 
 def auditor_loop(state: AuditState):
     print("🟡 [NODE 3] Auditor Loop triggered (Validating state & retries)...")
@@ -20,27 +20,13 @@ def auditor_loop(state: AuditState):
     resolved = state.get("resolved_clarifications", {})
     unresolved = state.get("unresolved_flags", [])
     categorized = state.get("categorized", [])
-    transactions = {getattr(t, "transaction_id", t.get("transaction_id") if isinstance(t, dict) else None): t for t in state.get("transactions", [])}
 
     # 1. Populate pending clarifications for low confidence items
     pending_ids = [getattr(p, 'transaction_id', p.get('transaction_id') if isinstance(p, dict) else None) for p in pending]
-    receipts_index = state.get("receipts_index", {})
-    receipt_warnings = state.get("receipt_warnings", [])
     
     for txn in categorized:
         txn_id = getattr(txn, 'transaction_id', "")
         is_low_conf = getattr(txn, 'confidence_score', 0.0) < CONFIDENCE_THRESHOLD
-        
-        orig_txn = transactions.get(txn_id)
-        amount = getattr(orig_txn, "amount", orig_txn.get("amount") if isinstance(orig_txn, dict) else 0.0) if orig_txn else 0.0
-        
-        is_missing_receipt = (txn_id not in receipts_index) and (amount >= RECEIPT_THRESHOLD)
-        
-        # Missing receipts are just a warning now
-        if is_missing_receipt:
-            warn_msg = f"⚠️ {txn_id} (₹{amount:,.2f}): No receipt uploaded. Keep for tax audit purposes."
-            if warn_msg not in receipt_warnings:
-                receipt_warnings.append(warn_msg)
         
         # Only low confidence goes to pending clarification
         if is_low_conf:
@@ -108,7 +94,6 @@ def auditor_loop(state: AuditState):
         "pending_clarifications": pending,
         "resolved_clarifications": resolved,
         "unresolved_flags": unresolved,
-        "receipt_warnings": receipt_warnings,
         "current_node": "auditor_loop"
     }
 

@@ -1,0 +1,2406 @@
+{
+  "dataset_version": "smartwealth-synthetic-v2",
+  "seed": 42,
+  "transactions": [
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1000",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1001",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1002",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1003",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1004",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1005",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1006",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1007",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1008",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1009",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1010",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1011",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1012",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1013",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1014",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1015",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1016",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1017",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1018",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1019",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1020",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1021",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1022",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1023",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1024",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1025",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1026",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1027",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1028",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1029",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1030",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1031",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": false,
+      "section": "Section 37",
+      "transaction_id": "TXN-1032",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1033",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1034",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1035",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1036",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1037",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1038",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1039",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1040",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1041",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1042",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1043",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1044",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1045",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1046",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1047",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1048",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1049",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1050",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1051",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1052",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1053",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1054",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1055",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1056",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1057",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1058",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1059",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1060",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1061",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1062",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1063",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1064",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1065",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1066",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1067",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1068",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1069",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1070",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1071",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1072",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1073",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1074",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1075",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1076",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1077",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1078",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1079",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1080",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1081",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1082",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1083",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1084",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1085",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1086",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1087",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1088",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1089",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1090",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1091",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1092",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1093",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1094",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "undetermined",
+      "has_receipt": false,
+      "section": null,
+      "transaction_id": "TXN-1095",
+      "true_category": "Unknown"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1096",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1097",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1098",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1099",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1100",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1101",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1102",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1103",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1104",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1105",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1106",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1107",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1108",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1109",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1110",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1111",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1112",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1113",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1114",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1115",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1116",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1117",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1118",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1119",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1120",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1121",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1122",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1123",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1124",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1125",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1126",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1127",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1128",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1129",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1130",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1131",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1132",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1133",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1134",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1135",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1136",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1137",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1138",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1139",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1140",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1141",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1142",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1143",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1144",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1145",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1146",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1147",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1148",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1149",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1150",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1151",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1152",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1153",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1154",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1155",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1156",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1157",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1158",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1159",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1160",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1161",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1162",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1163",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1164",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1165",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1166",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1167",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1168",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1169",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1170",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1171",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1172",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1173",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1174",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1175",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1176",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1177",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1178",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1179",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1180",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1181",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1182",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1183",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1184",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1185",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1186",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1187",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1188",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1189",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1190",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1191",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1192",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1193",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1194",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1195",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1196",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1197",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1198",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1199",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1200",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1201",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1202",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1203",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1204",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1205",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1206",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1207",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1208",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1209",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1210",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1211",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1212",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1213",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1214",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1215",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1216",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1217",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1218",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1219",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1220",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1221",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1222",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1223",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1224",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1225",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1226",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1227",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1228",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1229",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1230",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1231",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1232",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1233",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1234",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1235",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1236",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1237",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1238",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1239",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1240",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1241",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1242",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1243",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1244",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1245",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1246",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1247",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1248",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1249",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": false,
+      "section": "Section 32",
+      "transaction_id": "TXN-1250",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1251",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1252",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1253",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1254",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1255",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1256",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1257",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1258",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1259",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1260",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1261",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": false,
+      "section": "Section 37",
+      "transaction_id": "TXN-1262",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1263",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1264",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1265",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1266",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1267",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1268",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1269",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1270",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1271",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1272",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1273",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1274",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1275",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1276",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": false,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1277",
+      "true_category": "Travel & Transit"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1278",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1279",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1280",
+      "true_category": "Telephone & Internet"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1281",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1282",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1283",
+      "true_category": "Professional Fees"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1284",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1285",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1286",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1287",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1288",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1289",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": null,
+      "expected_treatment": "depreciable",
+      "has_receipt": true,
+      "section": "Section 32",
+      "transaction_id": "TXN-1290",
+      "true_category": "Hardware & Equipment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1291",
+      "true_category": "Office Supplies"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1292",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1293",
+      "true_category": "Software Subscriptions"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1294",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1295",
+      "true_category": "Business Meals"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": false,
+      "section": "Section 37",
+      "transaction_id": "TXN-1296",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1297",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 0.0,
+      "expected_treatment": "non_deductible",
+      "has_receipt": true,
+      "section": "Section 37",
+      "transaction_id": "TXN-1298",
+      "true_category": "Entertainment"
+    },
+    {
+      "expected_allowed_fraction": 1.0,
+      "expected_treatment": "deductible",
+      "has_receipt": true,
+      "section": "Section 37(1)",
+      "transaction_id": "TXN-1299",
+      "true_category": "Telephone & Internet"
+    }
+  ]
+}

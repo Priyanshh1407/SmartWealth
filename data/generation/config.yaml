@@ -1,4 +1,5 @@
 generation:
+  dataset_version: "smartwealth-synthetic-v2"
   seed: 42
   num_transactions: 300
   start_date: "2025-01-01"

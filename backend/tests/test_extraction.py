@@ -23,7 +23,7 @@ def run_extraction_test():
                     date=row['date'],
                     merchant=row['merchant'],
                     amount=float(row['amount']),
-                    category=row['category'], 
+                    category=row.get('category', ''),
                     description=row['description']
                 )
             )

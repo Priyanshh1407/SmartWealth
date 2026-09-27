@@ -1,11 +1,11 @@
-import os
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 
-from dotenv import load_dotenv
-load_dotenv()
+from backend.app.config import get_settings
+
+settings = get_settings()
 
 class GradeResult(BaseModel):
     """Binary score for relevance check on retrieved documents."""
@@ -17,7 +17,7 @@ def get_retrieval_grader():
     """Returns a runnable chain that outputs a strict yes/no GradeResult."""
     # 1. Initialize primary LLM (Groq is much faster, so we use it as primary)
     primary_llm = ChatGroq(
-        model="llama-3.1-8b-instant", 
+        model=settings.groq_model,
         temperature=0,
         max_retries=0,
         timeout=15
@@ -25,7 +25,7 @@ def get_retrieval_grader():
     
     # 2. Initialize the fallback LLM (Gemini)
     fallback_llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview", 
+        model=settings.gemini_model,
         temperature=0,
         max_retries=0,
         timeout=15

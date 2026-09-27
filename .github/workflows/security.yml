@@ -1,0 +1,53 @@
+name: security
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r backend/requirements.txt pip-audit cyclonedx-bom
+      - run: python -m pytest backend/tests -q
+        env:
+          OFFLINE_DEMO_MODE: "true"
+          API_DELAY_SECONDS: "0"
+      - name: Audit Python dependencies
+        run: >-
+          pip-audit -r backend/requirements.txt
+          --ignore-vuln PYSEC-2026-311
+          --ignore-vuln PYSEC-2026-3813
+          --ignore-vuln PYSEC-2026-3814
+          --ignore-vuln PYSEC-2026-3815
+      - run: cyclonedx-py requirements backend/requirements.txt --output-file sbom/backend.cdx.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install
+        working-directory: frontend
+      - run: npm audit --audit-level=high
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npm sbom --sbom-format cyclonedx > ../sbom/frontend.cdx.json
+        working-directory: frontend
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

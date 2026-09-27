@@ -1,67 +1,131 @@
-from typing import TypedDict, List, Dict, Optional
-from pydantic import BaseModel, Field
+from enum import Enum
+from typing import Dict, List, Optional, TypedDict
 
-# --- 1. Pydantic Models for Strict Validation ---
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+class TaxTreatment(str, Enum):
+    DEDUCTIBLE = 'deductible'
+    NON_DEDUCTIBLE = 'non_deductible'
+    DEPRECIABLE = 'depreciable'
+    PARTIALLY_DEDUCTIBLE = 'partially_deductible'
+    UNDETERMINED = 'undetermined'
+
+
+class LegalEvidence(BaseModel):
+    '''Exact, versioned evidence supporting one legal treatment.'''
+
+    corpus_version: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    page: int = Field(ge=1)
+    chunk_id: str = Field(min_length=1)
+    section: str = Field(min_length=1)
+    passage: str = Field(min_length=20)
+    retrieval_score: float = Field(ge=0.0, le=1.0)
+
+    @field_validator('corpus_version', 'document_id', 'title', 'chunk_id', 'section', 'passage')
+    @classmethod
+    def reject_blank_or_placeholder_text(cls, value: str) -> str:
+        cleaned = value.strip()
+        if cleaned.lower() in {'none', 'unknown', 'n/a', 'unversioned'}:
+            raise ValueError('evidence fields cannot use placeholder values')
+        return cleaned
+
+    @model_validator(mode='after')
+    def require_consistent_chunk_identity(self):
+        if not self.chunk_id.startswith(f'{self.document_id}:'):
+            raise ValueError('chunk_id must be namespaced by document_id')
+        return self
+
 
 class Transaction(BaseModel):
     transaction_id: str
     date: str
     merchant: str
-    amount: float
+    amount: float = Field(ge=0.0)
     category: str
     description: str
+
 
 class CategorizedTransaction(BaseModel):
     transaction_id: str
     predicted_category: str
-    confidence_score: float
+    confidence_score: float = Field(ge=0.0, le=1.0)
+
 
 class DeductibilityResult(BaseModel):
     transaction_id: str
-    is_deductible: bool
+    treatment: TaxTreatment
+    transaction_amount: float = Field(ge=0.0)
+    allowed_current_period_amount: float = Field(ge=0.0)
     reasoning: str
-    source_citation: str
-    source_passage: str = ""  # The actual text chunk from the tax PDF that supports the claim
+    evidence: Optional[LegalEvidence] = None
+    business_purpose_supported: bool = False
+    requires_accountant_review: bool = False
+    review_reasons: List[str] = Field(default_factory=list)
+
+    @model_validator(mode='after')
+    def enforce_safe_treatment_and_amount(self):
+        positive = {
+            TaxTreatment.DEDUCTIBLE,
+            TaxTreatment.DEPRECIABLE,
+            TaxTreatment.PARTIALLY_DEDUCTIBLE,
+        }
+        if self.treatment in positive and self.evidence is None:
+            raise ValueError('positive treatment requires complete legal evidence')
+        if self.allowed_current_period_amount > self.transaction_amount:
+            raise ValueError('allowed amount cannot exceed transaction amount')
+        if self.treatment in {TaxTreatment.NON_DEDUCTIBLE, TaxTreatment.UNDETERMINED}:
+            if self.allowed_current_period_amount != 0:
+                raise ValueError('non-deductible or undetermined treatment must allow zero')
+        if self.treatment == TaxTreatment.PARTIALLY_DEDUCTIBLE and self.allowed_current_period_amount:
+            if self.allowed_current_period_amount >= self.transaction_amount:
+                raise ValueError('partial deduction must be less than transaction amount')
+        return self
+
 
 class ClarificationRequest(BaseModel):
     transaction_id: str
     question: str
-    retries: int = 0  # Track how many times we've asked
+    retries: int = 0
+
 
 class DeductionClaim(BaseModel):
     transaction_id: str
     category: str
-    amount: float
-    is_deductible: bool
-    # ENFORCER: This field is mandatory!
-    source_passage_id: str = Field(..., description="Exact ChromaDB document ID")
-    source_passage: str = Field(default="", description="The text passage supporting the claim")
+    treatment: TaxTreatment
+    transaction_amount: float = Field(ge=0.0)
+    allowed_current_period_amount: float = Field(gt=0.0)
+    evidence: LegalEvidence
     reasoning: str
+    status: str = 'evidence_backed_draft_pending_review'
+
 
 class UnresolvedItem(BaseModel):
     transaction_id: str
     original_description: str
     reason_flagged: str
 
+
 class AuditReport(BaseModel):
     total_transactions_processed: int
-    total_deductions_inr: float
+    total_allowed_current_period_deductions_inr: float
     deduction_claims: List[DeductionClaim]
     unresolved_items: List[UnresolvedItem]
+    outcome_counts: Dict[str, int]
     warnings: List[str]
 
-# --- 2. The Master State Object ---
 
 class AuditState(TypedDict):
     thread_id: str
-    transactions: List[Transaction]                   # Raw data from CSV
-    receipts_index: Dict[str, str]                    # Maps txn_id -> path to PDF
-    categorized: List[CategorizedTransaction]         # Output of Node 1
-    deductibility_results: List[DeductibilityResult]  # Output of Node 2
-    pending_clarifications: List[ClarificationRequest]# Queue for Node 3
-    resolved_clarifications: Dict[str, str]           # User answers mapped by txn_id
-    unresolved_flags: List[str]                       # Items permanently flagged for an accountant
-    receipt_warnings: List[str]                       # Items missing receipts
-    final_report: Optional[AuditReport]               # Output of Node 4
-    current_node: str                                 # Tracks execution for the frontend
-    errors: List[str]                                 # Accumulated errors/warnings from all nodes
+    demo_scenario: Optional[str]
+    transactions: List[Transaction]
+    categorized: List[CategorizedTransaction]
+    deductibility_results: List[DeductibilityResult]
+    pending_clarifications: List[ClarificationRequest]
+    resolved_clarifications: Dict[str, str]
+    unresolved_flags: List[str]
+    final_report: Optional[AuditReport]
+    current_node: str
+    errors: List[str]

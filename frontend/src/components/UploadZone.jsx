@@ -1,125 +1,195 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import { MAX_CSV_BYTES, parseLedgerFile } from '../lib/csv';
 
-const UploadZone = ({ onFileUpload }) => {
+const EMPTY_RESULT = { rows: [], preview: [], errors: [] };
+
+const UploadZone = ({ onStartAudit }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [result, setResult] = useState(EMPTY_RESULT);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleDrag = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDragIn = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      setIsDragging(true);
+  const handleFile = useCallback(async (file) => {
+    setIsParsing(true);
+    setFileName(file?.name || '');
+    try {
+      setResult(await parseLedgerFile(file));
+    } catch {
+      setResult({
+        rows: [],
+        preview: [],
+        errors: [{ row: null, field: 'file', message: 'The CSV file could not be read. Try selecting it again.' }],
+      });
+    } finally {
+      setIsParsing(false);
     }
   }, []);
 
-  const handleDragOut = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDrop = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsDragging(false);
-  }, []);
+    if (event.dataTransfer.files?.length) void handleFile(event.dataTransfer.files[0]);
+  }, [handleFile]);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  }, []);
-
-  const handleFile = (file) => {
-    if (file && file.name.endsWith('.csv')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
-        onFileUpload(text);
-      };
-      reader.readAsText(file);
-    } else {
-      alert("Please upload a valid CSV file.");
-    }
-  };
-
-  const handleFileInput = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFile(e.target.files[0]);
+  const startAudit = async () => {
+    if (!consent || result.errors.length || !result.rows.length || isStarting) return;
+    setIsStarting(true);
+    try {
+      await onStartAudit(result.rows);
+    } finally {
+      setIsStarting(false);
     }
   };
 
   const handleDownloadTemplate = () => {
-    const templateContent = "transaction_id,date,merchant,amount,category,description\nTXN-001,2025-01-01,Office Depot,150.00,,Office supplies";
-    const blob = new Blob([templateContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'smartwealth_template.csv';
-    document.body.appendChild(a);
-    a.click();
+    const content = 'date,merchant,amount,description\n2025-01-01,Office Depot,150.00,Office supplies';
+    const url = window.URL.createObjectURL(new Blob([content], { type: 'text/csv' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'smartwealth_template.csv';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
   };
 
+  const ready = Boolean(
+    consent && result.rows.length && !result.errors.length && !isParsing,
+  );
+
   return (
-    <div 
-      className={`glass-card rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden animate-fade-scale transition-all duration-300 ${
-        isDragging ? 'border-primary bg-primary/5 shadow-[0_0_30px_rgba(76,215,246,0.3)]' : 'border-white/5'
+    <section
+      className={`glass-card rounded-xl flex-1 min-h-0 overflow-y-auto animate-fade-scale transition-all duration-300 ${
+        isDragging ? 'border-primary bg-primary/5' : 'border-white/5'
       }`}
-      onDragEnter={handleDragIn}
-      onDragLeave={handleDragOut}
-      onDragOver={handleDrag}
+      aria-labelledby="upload-title"
+      onDragEnter={(event) => { event.preventDefault(); setIsDragging(true); }}
+      onDragLeave={(event) => { event.preventDefault(); setIsDragging(false); }}
+      onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
     >
-      <div className="flex justify-between items-center p-md border-b border-white/5 shrink-0">
-        <h2 className="font-title-md text-on-surface">Upload Ledger</h2>
+      <div className="flex justify-between items-center p-md border-b border-white/5">
+        <div>
+          <h2 id="upload-title" className="font-title-md text-on-surface">Validate Ledger</h2>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Preview and fix row errors before any data is sent.
+          </p>
+        </div>
+        <span className="text-xs text-outline">Maximum {MAX_CSV_BYTES.toLocaleString()} bytes</span>
       </div>
-      
-      <div className="flex-1 flex flex-col items-center justify-center p-xl text-center">
-        <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-md transition-all duration-300 ${
-          isDragging ? 'bg-primary/20 scale-110' : 'bg-black/40'
-        }`}>
-          <span className={`material-symbols-outlined text-[48px] ${
-            isDragging ? 'text-primary' : 'text-on-surface-variant'
-          }`}>
-            cloud_upload
+
+      <div className="p-md md:p-lg space-y-md">
+        <div className="rounded-xl border border-dashed border-white/20 bg-black/20 p-lg text-center">
+          <span className="material-symbols-outlined text-primary text-[44px]" aria-hidden="true">
+            upload_file
           </span>
+          <p className="text-on-surface mt-sm">Drop one CSV here or browse from your device.</p>
+          <p className="text-xs text-outline mt-xs">Required columns: date, merchant, amount, description</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            aria-label="Choose ledger CSV"
+            onChange={(event) => {
+              if (event.target.files?.length) void handleFile(event.target.files[0]);
+            }}
+          />
+          <div className="mt-md flex flex-wrap justify-center gap-sm">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-md py-sm bg-primary text-on-primary rounded-lg font-label-caps focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {fileName ? 'Choose another CSV' : 'Browse CSV'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="px-md py-sm bg-white/5 text-on-surface rounded-lg border border-white/10 font-label-caps focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Download template
+            </button>
+          </div>
+          {fileName && <p className="mt-sm text-sm text-secondary">Selected: {fileName}</p>}
+          {isParsing && <p role="status" className="mt-sm text-sm text-primary">Validating CSV…</p>}
         </div>
-        
-        <h3 className="font-headline-sm text-on-surface mb-xs">Drag & Drop your CSV</h3>
-        <p className="font-body-md text-on-surface-variant max-w-[450px] mx-auto mb-lg text-center leading-relaxed">
-          Upload your client's bank ledger to begin the AI Tax Audit. Ensure it matches the required template format.
-        </p>
-        
-        <input 
-          type="file" 
-          accept=".csv" 
-          className="hidden" 
-          ref={fileInputRef}
-          onChange={handleFileInput}
-        />
-        
-        <div className="flex flex-col sm:flex-row items-center gap-sm">
-          <button 
-            onClick={() => fileInputRef.current.click()}
-            className="px-lg py-sm bg-gradient-to-r from-primary to-primary/80 text-on-primary rounded-lg font-label-caps hover:scale-105 transition-all shadow-[0_0_15px_rgba(76,215,246,0.4)]"
-          >
-            Browse Files
-          </button>
-          
-          <button 
-            onClick={handleDownloadTemplate}
-            className="px-lg py-sm bg-white/5 text-on-surface-variant rounded-lg font-label-caps hover:bg-white/10 hover:text-on-surface transition-all border border-white/10"
-          >
-            Download Template
-          </button>
-        </div>
+
+        {result.errors.length > 0 && (
+          <div role="alert" aria-live="assertive" className="rounded-lg border border-error/30 bg-error/10 p-md">
+            <h3 className="font-semibold text-error">Fix {result.errors.length} validation issue{result.errors.length === 1 ? '' : 's'}</h3>
+            <ul className="mt-sm max-h-36 overflow-y-auto space-y-xs text-sm text-on-error-container">
+              {result.errors.map((error, index) => (
+                <li key={`${error.row}-${error.field}-${index}`}>
+                  {error.row ? `Row ${error.row}, ${error.field}: ` : ''}{error.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {result.preview.length > 0 && (
+          <div aria-live="polite">
+            <div className="flex items-center justify-between mb-sm">
+              <h3 className="font-semibold text-on-surface">Preview</h3>
+              <span className="text-xs text-secondary">{result.rows.length} valid row{result.rows.length === 1 ? '' : 's'}</span>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-white/10">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="bg-black/30 text-outline">
+                  <tr>
+                    <th scope="col" className="p-sm text-left">Row</th>
+                    <th scope="col" className="p-sm text-left">Date</th>
+                    <th scope="col" className="p-sm text-left">Merchant</th>
+                    <th scope="col" className="p-sm text-right">Amount</th>
+                    <th scope="col" className="p-sm text-left">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.preview.map((row, index) => (
+                    <tr key={`${row.date}-${row.merchant}-${index}`} className="border-t border-white/5">
+                      <td className="p-sm text-outline">{index + 2}</td>
+                      <td className="p-sm text-on-surface-variant">{row.date}</td>
+                      <td className="p-sm text-on-surface">{row.merchant}</td>
+                      <td className="p-sm text-right font-mono">₹{Number(row.amount).toLocaleString()}</td>
+                      <td className="p-sm text-on-surface-variant">{row.description || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {result.rows.length > result.preview.length && (
+              <p className="mt-xs text-xs text-outline">Showing the first {result.preview.length} rows.</p>
+            )}
+          </div>
+        )}
+
+        <label className="flex items-start gap-sm text-sm text-on-surface-variant">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            I have authority to process this financial data and consent to the configured AI providers and retention policy.
+          </span>
+        </label>
+
+        <button
+          type="button"
+          onClick={startAudit}
+          disabled={!ready || isStarting}
+          className="w-full rounded-lg bg-secondary px-md py-sm font-bold text-on-secondary transition disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+        >
+          {isStarting ? 'Starting audit…' : 'Start validated audit'}
+        </button>
       </div>
-    </div>
+    </section>
   );
 };
 
