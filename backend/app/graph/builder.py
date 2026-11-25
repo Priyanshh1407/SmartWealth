@@ -20,10 +20,10 @@ def route_after_extraction(state: AuditState):
     
     for txn in categorized_txns:
         if txn.confidence_score < CONFIDENCE_THRESHOLD:
-            print(f"🚦 [ROUTER] Low confidence detected on {txn.transaction_id} ({txn.confidence_score}). Routing to Auditor Loop!")
+            print(f"[ROUTER] Low confidence detected on {txn.transaction_id} ({txn.confidence_score}). Routing to Auditor Loop!")
             return "auditor_loop"
             
-    print("🚦 [ROUTER] All transactions are high confidence. Proceeding to RAG.")
+    print("[ROUTER] All transactions are high confidence. Proceeding to RAG.")
     return "corrective_rag"
 
 def route_after_auditor(state: AuditState):

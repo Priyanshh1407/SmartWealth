@@ -171,7 +171,7 @@ npm run build
 npm audit
 ```
 
-The repository currently verifies 79 backend tests and 21 frontend tests. The
+The repository currently verifies 83 backend tests and 24 frontend tests. The
 complete browser, API, recovery, security, resilience, data, evaluation, and
 operations acceptance procedure is in the
 [Manual Acceptance Test Guide](./docs/manual_testing_guide.md).

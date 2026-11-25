@@ -55,8 +55,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate SmartWealth startup prerequisites.")
     parser.add_argument("--env-file", type=Path, help="Optional env file; values are never printed.")
     args = parser.parse_args()
-    if args.env_file:
-        load_dotenv(args.env_file, override=False)
+    # Match main.py, which always loads .env; an explicit file takes its place.
+    load_dotenv(args.env_file, override=False)
     errors, warnings = run_preflight()
     for warning in warnings:
         print(f"[WARN] {warning}")

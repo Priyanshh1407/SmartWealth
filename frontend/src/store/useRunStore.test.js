@@ -121,6 +121,38 @@ describe('run store reliability', () => {
     expect(useRunStore.getState().pendingClarifications).toHaveLength(1);
   });
 
+  it('resyncs from a fresh snapshot after a resume so the next review appears', async () => {
+    useRunStore.setState({
+      threadId: 'run-1',
+      status: 'waiting_for_input',
+      pendingClarifications: [
+        { transaction_id: 'txn-1', question: 'q' },
+        { transaction_id: 'txn-2', question: 'q' },
+      ],
+    });
+    apiRequest.mockResolvedValueOnce({ run_id: 'run-1', status: 'running' });
+    // The server resumed and paused again before the stream reconnected.
+    streamRun.mockImplementation(async (_runId, { onEvent, signal }) => {
+      onEvent({
+        event: 'snapshot',
+        data: {
+          status: 'waiting_for_input',
+          pending_clarifications: [{ transaction_id: 'txn-2', question: 'q' }],
+        },
+      });
+      await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+    });
+
+    const result = await useRunStore.getState().resolveTransaction('txn-1', 'Office Supplies');
+
+    expect(result).toEqual({ ok: true });
+    await vi.waitFor(() => expect(useRunStore.getState().status).toBe('waiting_for_input'));
+    expect(useRunStore.getState().pendingClarifications).toEqual([
+      { transaction_id: 'txn-2', question: 'q' },
+    ]);
+    useRunStore.getState().stopStream();
+  });
+
   it('reconnects the state stream with exponential backoff', async () => {
     vi.useFakeTimers();
     streamRun

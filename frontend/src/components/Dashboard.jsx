@@ -138,8 +138,10 @@ const Dashboard = () => {
       const isPending = pendingById.get(txn.transaction_id);
       const ded = resultById.get(txn.transaction_id);
 
-    let txnStatus = 'processing';
-    if (isPending || (cat && cat.predicted_category === 'Unknown')) {
+    // 'unresolved' means the paused run is waiting for this row's category.
+    // Rows the tax step could not support need an accountant, not a resume.
+    let txnStatus = cat ? 'awaiting_analysis' : 'processing';
+    if (isPending) {
       txnStatus = 'unresolved';
     } else if (ded) {
       const statusByTreatment = {
@@ -147,15 +149,15 @@ const Dashboard = () => {
         non_deductible: 'not_deductible',
         depreciable: 'depreciable',
         partially_deductible: 'partial',
-        undetermined: 'unresolved',
+        undetermined: 'accountant_review',
       };
-      txnStatus = statusByTreatment[ded.treatment] || 'unresolved';
+      txnStatus = statusByTreatment[ded.treatment] || 'accountant_review';
       if (
         ded.requires_accountant_review &&
         ded.allowed_current_period_amount === 0 &&
         ded.treatment !== 'depreciable'
       ) {
-        txnStatus = 'unresolved';
+        txnStatus = 'accountant_review';
       }
     }
 

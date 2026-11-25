@@ -66,8 +66,11 @@ const AuditorPanel = ({ transaction, onResolved }) => {
             <span className="font-mono text-[10px] text-on-surface-variant border border-white/10 px-2 py-0.5 rounded bg-black/50">{transaction.transaction_id || transaction.id}</span>
           </div>
           <p className="font-body-sm text-[13px] text-on-surface break-words">
-            MISC charge of <span className="font-mono text-tertiary">₹{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> from <span className="font-mono text-on-surface font-semibold">{transaction.merchant}</span>
+            Charge of <span className="font-mono text-tertiary">₹{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> from <span className="font-mono text-on-surface font-semibold">{transaction.merchant}</span>
           </p>
+          {transaction.description && (
+            <p className="mt-xs font-mono text-[11px] text-on-surface-variant break-words">{transaction.description}</p>
+          )}
         </div>
 
         <div className="mb-sm shrink-0">

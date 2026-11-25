@@ -8,6 +8,12 @@ const OUTCOME_LABELS = {
   undetermined: 'Undetermined',
 };
 
+const PENDING_LABELS = {
+  unresolved: 'Needs your review',
+  awaiting_analysis: 'Awaiting tax analysis',
+  processing: 'Processing',
+};
+
 const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
   <table className="w-full text-left border-collapse min-w-[920px]">
     <thead className="sticky top-0 bg-background/95 backdrop-blur-sm z-10">
@@ -24,8 +30,10 @@ const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
     <tbody className="text-[14px]">
       {transactions.map((transaction) => {
         const needsAction = transaction.status === 'unresolved';
+        const needsAccountant = transaction.status === 'accountant_review';
         const outcome = OUTCOME_LABELS[transaction.treatment]
-          || (transaction.status === 'processing' ? 'Processing' : 'Pending review');
+          || PENDING_LABELS[transaction.status]
+          || 'Processing';
         return (
           <tr
             key={transaction.id}
@@ -59,7 +67,7 @@ const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
             </td>
             <td className="py-sm pr-md">
               <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold ${
-                needsAction
+                needsAction || needsAccountant
                   ? 'border-tertiary/30 bg-tertiary/10 text-tertiary'
                   : 'border-white/10 bg-white/5 text-on-surface-variant'
               }`}>
@@ -83,8 +91,12 @@ const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
                 >
                   Open evidence drawer
                 </button>
+              ) : transaction.treatment ? (
+                <span className="text-xs text-outline">
+                  {needsAccountant ? 'No supporting passage · accountant review' : 'No supporting passage'}
+                </span>
               ) : (
-                <span className="text-xs text-outline">No supporting passage</span>
+                <span className="text-xs text-outline">Awaiting tax analysis</span>
               )}
             </td>
           </tr>

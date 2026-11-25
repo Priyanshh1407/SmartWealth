@@ -35,7 +35,7 @@ def get_retrieval_grader():
     primary_structured = primary_llm.with_structured_output(GradeResult)
     fallback_structured = fallback_llm.with_structured_output(GradeResult)
     
-    # 4. Chain them together — when Gemini hits 429, Groq takes over
+    # 4. Chain them together — when Groq fails (e.g. 429), Gemini takes over
     structured_llm_grader = primary_structured.with_fallbacks(
         [fallback_structured],
         exceptions_to_handle=(Exception,)  # Catch ALL exceptions including gRPC errors

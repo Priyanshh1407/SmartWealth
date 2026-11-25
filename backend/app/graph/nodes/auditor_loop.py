@@ -7,7 +7,7 @@ settings = get_settings()
 CONFIDENCE_THRESHOLD = settings.confidence_threshold
 
 def auditor_loop(state: AuditState):
-    print("🟡 [NODE 3] Auditor Loop triggered (Validating state & retries)...")
+    print("[NODE 3] Auditor Loop triggered (Validating state & retries)...")
     
     thread_id = state.get("thread_id", "")
     progress_store.update(
@@ -31,7 +31,13 @@ def auditor_loop(state: AuditState):
         # Only low confidence goes to pending clarification
         if is_low_conf:
             if txn_id not in pending_ids and txn_id not in resolved and txn_id not in unresolved:
-                question = "Please clarify this transaction."
+                confidence = getattr(txn, 'confidence_score', 0.0)
+                predicted = getattr(txn, 'predicted_category', 'Unknown')
+                question = (
+                    f"Model confidence {confidence:.0%} is below the "
+                    f"{CONFIDENCE_THRESHOLD:.0%} review threshold "
+                    f"(model suggestion: {predicted}). Confirm the correct category."
+                )
                 pending.append({
                     "transaction_id": txn_id, 
                     "question": question, 
@@ -48,12 +54,12 @@ def auditor_loop(state: AuditState):
     if not active_clarifications:
         return {"current_node": "report_generation"}
 
-    # 3. Update progress before pausing
+    # 3. Update progress before pausing: reviewed rows out of all flagged rows
     progress_store.update(
         thread_id,
         message=f"Waiting for human review on {len(active_clarifications)} transaction(s)…",
-        processed=len(active_clarifications),
-        total=len(active_clarifications),
+        processed=len(pending) - len(active_clarifications),
+        total=len(pending),
     )
 
     # 4. PAUSE THE GRAPH (Wait for the frontend to submit an answer)
@@ -66,7 +72,7 @@ def auditor_loop(state: AuditState):
             answer = response.get("answer")
 
             if is_unusable_answer(answer):
-                print(f"      🚫 Unusable answer detected for {txn_id}: '{answer}'")
+                print(f"      [WARN] Unusable answer detected for {txn_id}: '{answer}'")
                 
                 # Increment the retry counter
                 for req in pending:
@@ -79,11 +85,11 @@ def auditor_loop(state: AuditState):
                             req.retries += 1
                             current_retries = req.retries
 
-                        print(f"      🔄 Retry count for {txn_id} is now: {current_retries}")
+                        print(f"      [RETRY] Retry count for {txn_id} is now: {current_retries}")
 
                         # Execute the downgrade if they failed twice
                         if current_retries > 1:
-                            print(f"      🛑 Max retries reached! Moving {txn_id} to unresolved.")
+                            print(f"      [UNRESOLVED] Max retries reached! Moving {txn_id} to unresolved.")
                             unresolved.append(txn_id)
                         break
             else:

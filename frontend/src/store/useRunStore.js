@@ -277,6 +277,10 @@ const useRunStore = create((set, get) => ({
           (item) => (item.transaction_id || item) !== transactionId,
         ),
       }));
+      // SSE deltas are relative to what the server last sent. The resume
+      // response changed local state, and a fast resume-then-pause can finish
+      // between two server polls, so reconnect to start from a fresh snapshot.
+      get().retryStream();
       return { ok: true };
     } catch (error) {
       const message = error.message || 'Failed to submit clarification.';
