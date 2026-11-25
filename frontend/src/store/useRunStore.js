@@ -3,6 +3,39 @@ import { apiRequest, streamRun } from '../api/client';
 
 const STORAGE_KEY = 'smart-wealth-audit-state';
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled']);
+const MISSING_RUN_MESSAGE = 'The saved audit no longer exists on the server '
+  + '(it expired or was deleted). Start a new audit.';
+const DELETE_RETRY_ATTEMPTS = 10;
+const DELETE_RETRY_DELAY_MS = 500;
+
+const EMPTY_RUN_STATE = {
+  threadId: null,
+  status: 'idle',
+  transactions: [],
+  categorized: [],
+  deductibilityResults: [],
+  pendingClarifications: [],
+  unresolvedFlags: [],
+  humanOverrideIds: [],
+  runTimeline: [],
+  auditTrail: [],
+  totalTransactions: 0,
+  totalDeductible: 0,
+  averageModelConfidence: 0,
+  progress: null,
+  errors: [],
+  finalReport: null,
+};
+
+// Resolves when the request succeeds or fails with one of the given statuses.
+async function requestAllowing(path, options, allowedStatuses) {
+  try {
+    return await apiRequest(path, options);
+  } catch (error) {
+    if (allowedStatuses.includes(error.status)) return null;
+    throw error;
+  }
+}
 
 const generateIdempotencyKey = () => (
   globalThis.crypto?.randomUUID?.()
@@ -137,6 +170,10 @@ const useRunStore = create((set, get) => ({
       }
       return true;
     } catch (error) {
+      if (error.status === 404) {
+        get().forgetMissingRun();
+        return false;
+      }
       // Active runs retain the existing reconnect loop for temporary outages.
       if (!TERMINAL_STATUSES.has(status)) {
         get().startStream();
@@ -206,6 +243,7 @@ const useRunStore = create((set, get) => ({
           reconnectAttempt: attempt,
         });
         let receivedEvent = false;
+        let runMissing = false;
         try {
           await streamRun(runId, {
             signal: controller.signal,
@@ -216,10 +254,16 @@ const useRunStore = create((set, get) => ({
               if (event === 'snapshot' || event === 'delta') {
                 get().applyServerUpdate(data);
               } else if (event === 'error') {
+                // The stream reports a missing run as an event in a 200 response.
+                if (data.status === 404) runMissing = true;
                 set({ errors: [data.detail || 'State stream failed.'] });
               }
             },
           });
+          if (runMissing) {
+            get().forgetMissingRun();
+            break;
+          }
           if (TERMINAL_STATUSES.has(get().status)) break;
           if (!receivedEvent) throw new Error('State stream ended before sending data.');
           throw new Error('State stream disconnected.');
@@ -334,37 +378,39 @@ const useRunStore = create((set, get) => ({
     }
   },
 
+  forgetMissingRun: () => {
+    get().stopStream();
+    clearStorage();
+    set({ ...EMPTY_RUN_STATE, errors: [MISSING_RUN_MESSAGE] });
+  },
+
   resetAudit: async () => {
     const { threadId, status } = get();
+    get().stopStream();
     try {
       if (threadId) {
-        const active = ['queued', 'running', 'waiting_for_input'].includes(status);
-        if (active) await apiRequest(`/runs/${threadId}/cancel`, { method: 'POST' });
-        await apiRequest(`/runs/${threadId}`, { method: 'DELETE' });
+        // Local status can be stale, so cancel unless the run is known to be
+        // finished. 404 means it is already gone; 409 means it already ended.
+        if (!TERMINAL_STATUSES.has(status)) {
+          await requestAllowing(`/runs/${threadId}/cancel`, { method: 'POST' }, [404, 409]);
+        }
+        // A cancelled worker may still be stopping; deletion returns 409 until it does.
+        for (let attempt = 1; ; attempt += 1) {
+          try {
+            await requestAllowing(`/runs/${threadId}`, { method: 'DELETE' }, [404]);
+            break;
+          } catch (error) {
+            if (error.status !== 409 || attempt >= DELETE_RETRY_ATTEMPTS) throw error;
+            await new Promise((resolve) => setTimeout(resolve, DELETE_RETRY_DELAY_MS));
+          }
+        }
       }
-      get().stopStream();
       clearStorage();
-      set({
-        threadId: null,
-        status: 'idle',
-        transactions: [],
-        categorized: [],
-        deductibilityResults: [],
-        pendingClarifications: [],
-        unresolvedFlags: [],
-        humanOverrideIds: [],
-        runTimeline: [],
-        auditTrail: [],
-        totalTransactions: 0,
-        totalDeductible: 0,
-        averageModelConfidence: 0,
-        progress: null,
-        errors: [],
-        finalReport: null,
-      });
+      set({ ...EMPTY_RUN_STATE });
       return true;
     } catch (error) {
       set({ errors: [error.message || 'Failed to reset audit. Retry shortly.'] });
+      get().startStream();
       return false;
     }
   },

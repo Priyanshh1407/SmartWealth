@@ -153,6 +153,62 @@ describe('run store reliability', () => {
     useRunStore.getState().stopStream();
   });
 
+  const httpError = (status, message) => Object.assign(new Error(message), { status });
+
+  it('resets even when the server no longer has the run', async () => {
+    useRunStore.setState({ threadId: 'run-gone', status: 'waiting_for_input' });
+    apiRequest
+      .mockRejectedValueOnce(httpError(404, 'Run not found.'))
+      .mockRejectedValueOnce(httpError(404, 'Run not found.'));
+
+    expect(await useRunStore.getState().resetAudit()).toBe(true);
+
+    expect(useRunStore.getState().status).toBe('idle');
+    expect(useRunStore.getState().threadId).toBeNull();
+    expect(useRunStore.getState().errors).toEqual([]);
+  });
+
+  it('retries deletion while a cancelled worker is still stopping', async () => {
+    vi.useFakeTimers();
+    useRunStore.setState({ threadId: 'run-1', status: 'running' });
+    apiRequest
+      .mockResolvedValueOnce({ status: 'cancelled' })
+      .mockRejectedValueOnce(httpError(409, 'Run worker is still stopping; retry deletion shortly.'))
+      .mockResolvedValueOnce(null);
+
+    const resetting = useRunStore.getState().resetAudit();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(await resetting).toBe(true);
+    expect(apiRequest).toHaveBeenCalledTimes(3);
+    expect(useRunStore.getState().status).toBe('idle');
+  });
+
+  it('stops reconnecting and clears the screen when the stream reports a missing run', async () => {
+    streamRun.mockImplementation(async (_runId, { onEvent }) => {
+      onEvent({ event: 'error', data: { status: 404, detail: 'Run not found.' } });
+    });
+    useRunStore.setState({ threadId: 'run-gone', status: 'waiting_for_input' });
+
+    useRunStore.getState().startStream();
+
+    await vi.waitFor(() => expect(useRunStore.getState().status).toBe('idle'));
+    expect(streamRun).toHaveBeenCalledTimes(1);
+    expect(useRunStore.getState().threadId).toBeNull();
+    expect(useRunStore.getState().errors[0]).toMatch(/no longer exists/);
+  });
+
+  it('drops a saved run that no longer exists instead of reconnecting forever', async () => {
+    useRunStore.setState({ threadId: 'run-gone', status: 'waiting_for_input' });
+    apiRequest.mockRejectedValueOnce(httpError(404, 'Run not found.'));
+
+    expect(await useRunStore.getState().resumeIfNeeded()).toBe(false);
+
+    expect(streamRun).not.toHaveBeenCalled();
+    expect(useRunStore.getState().status).toBe('idle');
+    expect(useRunStore.getState().errors[0]).toMatch(/no longer exists/);
+  });
+
   it('reconnects the state stream with exponential backoff', async () => {
     vi.useFakeTimers();
     streamRun
