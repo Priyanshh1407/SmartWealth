@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import useRunStore from '../store/useRunStore';
 
-const AuditorPanel = ({ transaction, onResolved }) => {
+const CATEGORY_OPTIONS = [
+  'Software Subscriptions',
+  'Travel & Transit',
+  'Business Meals',
+  'Entertainment',
+  'Office Supplies',
+  'Hardware & Equipment',
+  'Professional Fees',
+  'Telephone & Internet',
+];
+
+const AuditorPanel = ({ transaction, onResolved, samePendingMerchantCount = 0 }) => {
   const [isResolving, setIsResolving] = useState(false);
   const [category, setCategory] = useState("");
   const [submitError, setSubmitError] = useState('');
   const resolveTransaction = useRunStore(state => state.resolveTransaction);
+  const reviseCategory = useRunStore(state => state.reviseCategory);
   const cancelAudit = useRunStore(state => state.cancelAudit);
+  const isRevise = transaction?.mode === 'revise';
 
   useEffect(() => {
-    setCategory('');
+    // Changing a category starts from the current one; a review starts empty.
+    setCategory(
+      isRevise && CATEGORY_OPTIONS.includes(transaction?.category) ? transaction.category : '',
+    );
     setSubmitError('');
     setIsResolving(false);
-  }, [transaction?.id, transaction?.transaction_id]);
+  }, [isRevise, transaction?.category, transaction?.id, transaction?.transaction_id]);
 
   // If no transaction is selected, show an empty state or hidden state
   if (!transaction) {
@@ -31,7 +47,8 @@ const AuditorPanel = ({ transaction, onResolved }) => {
     if (!category || isResolving) return;
     setIsResolving(true);
     setSubmitError('');
-    const result = await resolveTransaction(
+    const submit = isRevise ? reviseCategory : resolveTransaction;
+    const result = await submit(
       transaction.transaction_id || transaction.id,
       category,
     );
@@ -55,14 +72,16 @@ const AuditorPanel = ({ transaction, onResolved }) => {
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/30 shadow-[0_0_10px_rgba(76,215,246,0.2)]">
             <span className="material-symbols-outlined text-primary text-[18px]">psychology</span>
           </div>
-          <h3 id="clarification-title" className="font-title-md text-[18px] text-on-surface">Human-in-the-Loop</h3>
+          <h3 id="clarification-title" className="font-title-md text-[18px] text-on-surface">
+            {isRevise ? 'Change category' : 'Human-in-the-Loop'}
+          </h3>
           <div className="ml-auto w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(255,185,95,0.8)] animate-pulse shrink-0"></div>
         </div>
 
         <div className="bg-black/40 rounded-lg p-sm border border-tertiary/30 mb-sm relative overflow-hidden shadow-inner shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-tertiary shadow-[0_0_10px_rgba(255,185,95,0.6)]"></div>
           <div className="flex justify-between items-center mb-xs">
-            <span className="font-label-caps text-tertiary block">Active Alert</span>
+            <span className="font-label-caps text-tertiary block">{isRevise ? 'Selected transaction' : 'Active Alert'}</span>
             <span className="font-mono text-[10px] text-on-surface-variant border border-white/10 px-2 py-0.5 rounded bg-black/50">{transaction.transaction_id || transaction.id}</span>
           </div>
           <p className="font-body-sm text-[13px] text-on-surface break-words">
@@ -73,17 +92,43 @@ const AuditorPanel = ({ transaction, onResolved }) => {
           )}
         </div>
 
-        <div className="mb-sm shrink-0">
-          <span className="font-label-caps text-outline mb-xs flex items-center gap-xs">
-            <span className="material-symbols-outlined text-[14px]">troubleshoot</span> AI Reasoning
-          </span>
-          <p className="font-body-sm text-[13px] text-on-surface-variant leading-snug p-sm bg-white/5 rounded-lg border border-white/5">
-            {transaction.clarificationQuestion || "AI confidence below threshold. Manual review required."}
-          </p>
-        </div>
+        {isRevise ? (
+          <div className="mb-sm shrink-0">
+            <span className="font-label-caps text-outline mb-xs flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[14px]">history_edu</span> Current decision
+            </span>
+            <p className="font-body-sm text-[13px] text-on-surface-variant leading-snug p-sm bg-white/5 rounded-lg border border-white/5">
+              <span className="font-semibold text-on-surface">{transaction.category}</span>
+              {transaction.memoryResolved
+                ? ', applied from reviewer memory.'
+                : transaction.humanOverridden
+                  ? ', set by a reviewer.'
+                  : `, predicted by the model at ${Math.round((transaction.confidence || 0) * 100)}% confidence.`}
+              {' '}Changing it recalculates the tax treatment and report, is recorded in the
+              audit trail, and is remembered for future audits of this merchant.
+            </p>
+          </div>
+        ) : (
+          <div className="mb-sm shrink-0">
+            <span className="font-label-caps text-outline mb-xs flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[14px]">troubleshoot</span> AI Reasoning
+            </span>
+            <p className="font-body-sm text-[13px] text-on-surface-variant leading-snug p-sm bg-white/5 rounded-lg border border-white/5">
+              {transaction.clarificationQuestion || "AI confidence below threshold. Manual review required."}
+            </p>
+            {samePendingMerchantCount > 0 && (
+              <p className="mt-xs rounded-lg border border-primary/20 bg-primary/5 p-xs text-[12px] text-primary">
+                Your answer also applies to {samePendingMerchantCount} other flagged
+                transaction{samePendingMerchantCount > 1 ? 's' : ''} from {transaction.merchant};{' '}
+                {samePendingMerchantCount > 1 ? 'they' : 'it'} will be marked as resolved from
+                reviewer memory.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-auto shrink-0 pt-sm">
-          <label htmlFor="clarification-category" className="font-label-caps text-primary mb-xs block text-[10px]">Please confirm category</label>
+          <label htmlFor="clarification-category" className="font-label-caps text-primary mb-xs block text-[10px]">{isRevise ? 'New category' : 'Please confirm category'}</label>
           <div className="relative mb-md">
             <select
               id="clarification-category"
@@ -106,26 +151,41 @@ const AuditorPanel = ({ transaction, onResolved }) => {
           
           {submitError && (
             <div role="alert" className="mb-sm rounded-lg border border-error/30 bg-error/10 p-sm text-sm text-error">
-              {submitError} Your clarification is still open; retry when ready.
+              {submitError} {isRevise ? 'The category was not changed' : 'Your clarification is still open'}; retry when ready.
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-sm">
-            <button
-              type="button"
-              onClick={() => void cancelAudit()}
-              disabled={isResolving}
-              className="py-sm border border-error/30 text-error hover:bg-error/10 rounded-lg font-label-caps disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error"
-            >
-              Cancel audit
-            </button>
+            {isRevise ? (
+              <button
+                type="button"
+                onClick={onResolved}
+                disabled={isResolving}
+                className="py-sm border border-white/15 text-on-surface-variant hover:bg-white/10 rounded-lg font-label-caps disabled:opacity-50"
+              >
+                Close
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void cancelAudit()}
+                disabled={isResolving}
+                className="py-sm border border-error/30 text-error hover:bg-error/10 rounded-lg font-label-caps disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error"
+              >
+                Cancel audit
+              </button>
+            )}
             <button
               type="button"
               onClick={handleResolve}
-              disabled={isResolving || !category}
+              disabled={isResolving || !category || (isRevise && category === transaction.category)}
               className="py-sm bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 rounded-lg font-label-caps flex items-center justify-center gap-xs disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {isResolving ? 'Submitting…' : submitError ? 'Retry submission' : 'Resolve'}
+              {isResolving
+                ? 'Submitting…'
+                : submitError
+                  ? 'Retry submission'
+                  : isRevise ? 'Apply change' : 'Resolve'}
             </button>
           </div>
         </div>

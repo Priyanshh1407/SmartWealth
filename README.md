@@ -19,6 +19,11 @@ an unsupported deduction.
   preview, row-specific errors, and one-megabyte/500-row limits.
 - **Human-supervised categorization:** Low-confidence transactions pause the
   workflow for an explicit category decision.
+- **Reviewer memory:** A category decided for a merchant is remembered, so
+  later rows and later audits from that merchant are resolved automatically
+  and labelled as such. Placeholders like `POS DEBIT` are never remembered, and
+  any row's category can be changed after completion, which recalculates the
+  report.
 - **Evidence-backed outcomes:** Results distinguish deductible,
   non-deductible, depreciable, partially deductible, and undetermined
   treatments. Positive outcomes require complete evidence provenance.
@@ -32,7 +37,10 @@ an unsupported deduction.
 - **Auditability:** A durable visual timeline and hash-chained human-override
   history record what changed, who changed it, and the downstream impact.
 - **Evidence inspection:** The UI exposes corpus version, source document,
-  section, page, chunk, retrieval score, passage, reasoning, and support status.
+  section, page, chunk, retrieval score, passage, reasoning, and support status,
+  alongside the transaction's own facts and how its category was decided.
+  Offline mode cites verbatim statute passages (Sections 37(1) and 32(1)) from
+  the versioned corpus, selected by a fixed category rule.
 - **Measured evaluation:** The dashboard separates a historical baseline from a
   controlled fixture and shows confusion matrices, abstention coverage,
   retrieval faithfulness, latency, and provider cost.
@@ -171,7 +179,7 @@ npm run build
 npm audit
 ```
 
-The repository currently verifies 83 backend tests and 24 frontend tests. The
+The repository currently verifies 88 backend tests and 35 frontend tests. The
 complete browser, API, recovery, security, resilience, data, evaluation, and
 operations acceptance procedure is in the
 [Manual Acceptance Test Guide](./docs/manual_testing_guide.md).
@@ -219,7 +227,10 @@ Never commit provider credentials or real client financial data.
 | `GET` | `/api/runs/{run_id}/events` | Stream state snapshots and deltas |
 | `GET` | `/api/clarifications/{run_id}` | Read pending human review |
 | `POST` | `/api/resume/{run_id}` | Resume with validated answers |
-| `GET` | `/api/runs/{run_id}/audit` | Read the human-override audit chain |
+| `GET` | `/api/runs/{run_id}/audit` | Read the category-decision audit chain |
+| `POST` | `/api/runs/{run_id}/revise` | Change categories on a completed run |
+| `GET` | `/api/merchant-memory` | List remembered merchant categories |
+| `DELETE` | `/api/merchant-memory` | Forget remembered merchant categories |
 | `POST` | `/api/runs/{run_id}/cancel` | Cancel active work |
 | `DELETE` | `/api/runs/{run_id}` | Delete a terminal run |
 | `GET` | `/api/evaluation/summary` | Read dashboard evaluation evidence |
@@ -227,7 +238,7 @@ Never commit provider credentials or real client financial data.
 | `GET` | `/health/ready` | Dependency-aware readiness |
 | `GET` | `/metrics` | Prometheus-format metrics |
 
-Start and resume requests require an `Idempotency-Key` header.
+Start, resume, and revise requests require an `Idempotency-Key` header.
 
 ## Security and deployment boundary
 

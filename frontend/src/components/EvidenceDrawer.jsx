@@ -9,6 +9,15 @@ const OUTCOMES = {
   undetermined: 'an undetermined outcome',
 };
 
+// Matches the note backend/app/demo/offline.py appends to offline reasoning.
+const OFFLINE_SELECTION_MARKER = 'selected by a fixed category rule';
+
+function categorySource(transaction) {
+  if (transaction.memoryResolved) return 'Applied from reviewer memory for this merchant';
+  if (transaction.humanOverridden) return 'Set by a reviewer';
+  return `Predicted by the model at ${Math.round((transaction.confidence || 0) * 100)}% confidence`;
+}
+
 const EvidenceDrawer = ({ transaction, onClose }) => {
   const closeRef = useRef(null);
 
@@ -25,6 +34,9 @@ const EvidenceDrawer = ({ transaction, onClose }) => {
   if (!transaction) return null;
   const { evidence } = transaction;
   const supports = Boolean(evidence);
+  // Offline mode picks statute passages by category, not by similarity search,
+  // so a "retrieval score" would be meaningless there.
+  const selectedByRule = Boolean(transaction.reasoning?.includes(OFFLINE_SELECTION_MARKER));
 
   const drawer = (
     <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm" role="presentation">
@@ -59,6 +71,36 @@ const EvidenceDrawer = ({ transaction, onClose }) => {
           </button>
         </div>
 
+        <section aria-labelledby="evidence-transaction-title" className="mt-md rounded-xl border border-white/10 bg-black/20 p-md">
+          <h3 id="evidence-transaction-title" className="font-label-caps text-[10px] text-primary">This transaction</h3>
+          <dl className="mt-sm grid grid-cols-2 gap-x-md gap-y-xs text-xs">
+            <dt className="text-outline">Date</dt>
+            <dd className="text-on-surface">{transaction.date}</dd>
+            <dt className="text-outline">Amount</dt>
+            <dd className="font-mono text-on-surface">₹{Number(transaction.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</dd>
+            <dt className="text-outline">Description</dt>
+            <dd className="break-words font-mono text-on-surface">{transaction.description || '—'}</dd>
+            <dt className="text-outline">Category</dt>
+            <dd className="text-on-surface">
+              {transaction.category}
+              <span className="block text-outline">
+                {categorySource(transaction)}
+              </span>
+            </dd>
+            {transaction.allowedAmount != null && (
+              <>
+                <dt className="text-outline">Allowed this period</dt>
+                <dd className="font-mono text-on-surface">₹{Number(transaction.allowedAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</dd>
+              </>
+            )}
+          </dl>
+          {transaction.reviewReasons?.length > 0 && (
+            <ul className="mt-sm list-disc pl-md text-xs text-tertiary">
+              {transaction.reviewReasons.map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          )}
+        </section>
+
         <div className="my-md rounded-xl border border-white/10 bg-white/5 p-md">
           <p className="font-label-caps text-[9px] text-outline">Decision relationship</p>
           <p className={`mt-xs text-sm font-semibold ${supports ? 'text-secondary' : 'text-tertiary'}`}>
@@ -81,7 +123,9 @@ const EvidenceDrawer = ({ transaction, onClose }) => {
                 ['Section', evidence.section],
                 ['Page', evidence.page],
                 ['Chunk', evidence.chunk_id],
-                ['Retrieval score', `${Math.round(evidence.retrieval_score * 100)}%`],
+                selectedByRule
+                  ? ['Selection', 'Fixed category rule (offline mode)']
+                  : ['Retrieval score', `${Math.round(evidence.retrieval_score * 100)}%`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-lg border border-white/10 bg-black/20 p-sm">
                   <dt className="font-label-caps text-[9px] text-outline">{label}</dt>
@@ -90,7 +134,16 @@ const EvidenceDrawer = ({ transaction, onClose }) => {
               ))}
             </dl>
             <section className="mt-md">
-              <h3 className="font-label-caps text-[10px] text-primary">Retrieved passage</h3>
+              <h3 className="font-label-caps text-[10px] text-primary">
+                {selectedByRule ? 'Statute passage' : 'Retrieved passage'}
+              </h3>
+              {transaction.rowsSharingRule > 1 && (
+                <p className="mt-xs text-xs text-outline">
+                  Category rule: the same passage supports all {transaction.rowsSharingRule}{' '}
+                  {transaction.category} transactions in this audit. The facts above are
+                  specific to this one.
+                </p>
+              )}
               <blockquote className="mt-sm border-l-2 border-primary/40 pl-md text-sm leading-7 text-on-surface-variant">
                 {evidence.passage}
               </blockquote>

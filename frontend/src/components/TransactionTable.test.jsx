@@ -18,12 +18,13 @@ const row = (overrides) => ({
   ...overrides,
 });
 
-function renderRows(transactions) {
+function renderRows(transactions, props = {}) {
   render(
     <TransactionTable
       transactions={transactions}
       onResolve={vi.fn()}
       onViewEvidence={vi.fn()}
+      {...props}
     />,
   );
   return screen.getAllByRole('row').slice(1);
@@ -50,5 +51,28 @@ describe('TransactionTable row states', () => {
     expect(
       within(undetermined).getByText('No supporting passage · accountant review'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('TransactionTable reviewer decisions', () => {
+  it('marks rows resolved from reviewer memory', () => {
+    const [tableRow] = renderRows([row({ memoryResolved: true, treatment: 'deductible' })]);
+
+    expect(within(tableRow).getByText('From reviewer memory')).toBeInTheDocument();
+    expect(within(tableRow).queryByText('Human override')).toBeNull();
+  });
+
+  it('offers a category change only when the run allows it', () => {
+    const onChangeCategory = vi.fn();
+    const [withChange] = renderRows(
+      [row({ treatment: 'deductible' })],
+      { onChangeCategory },
+    );
+    within(withChange).getByRole('button', { name: /Change category for Example/ }).click();
+    expect(onChangeCategory).toHaveBeenCalledWith(expect.objectContaining({ id: 'TXN-1' }));
+    cleanup();
+
+    const [withoutChange] = renderRows([row({ treatment: 'deductible' })]);
+    expect(within(withoutChange).queryByRole('button', { name: /Change category/ })).toBeNull();
   });
 });

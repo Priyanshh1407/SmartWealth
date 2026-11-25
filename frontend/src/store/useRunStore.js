@@ -17,6 +17,8 @@ const EMPTY_RUN_STATE = {
   pendingClarifications: [],
   unresolvedFlags: [],
   humanOverrideIds: [],
+  memoryOverrideIds: [],
+  resolvedClarifications: {},
   runTimeline: [],
   auditTrail: [],
   totalTransactions: 0,
@@ -109,6 +111,9 @@ const useRunStore = create((set, get) => ({
   pendingClarifications: [],
   unresolvedFlags: [],
   humanOverrideIds: [],
+  memoryOverrideIds: [],
+  resolvedClarifications: {},
+  merchantMemory: [],
   runTimeline: [],
   auditTrail: [],
   evaluationSummary: null,
@@ -130,10 +135,12 @@ const useRunStore = create((set, get) => ({
       update.deductibility_results ?? current.deductibilityResults
     );
     const humanOverrideIds = update.human_override_ids ?? current.humanOverrideIds;
+    const memoryOverrideIds = update.memory_override_ids ?? current.memoryOverrideIds;
+    // Reviewer decisions, typed or remembered, are not model confidence.
     const calculated = metricsFor(
       categorized,
       deductibilityResults,
-      humanOverrideIds,
+      [...humanOverrideIds, ...memoryOverrideIds],
     );
     const next = {
       status: update.status ?? current.status,
@@ -144,7 +151,11 @@ const useRunStore = create((set, get) => ({
         update.pending_clarifications ?? current.pendingClarifications
       ),
       unresolvedFlags: update.unresolved_flags ?? current.unresolvedFlags,
+      resolvedClarifications: (
+        update.resolved_clarifications ?? current.resolvedClarifications
+      ),
       humanOverrideIds,
+      memoryOverrideIds,
       runTimeline: update.run_timeline ?? current.runTimeline,
       auditTrail: update.audit_trail ?? current.auditTrail,
       progress: update.progress ?? current.progress,
@@ -203,6 +214,8 @@ const useRunStore = create((set, get) => ({
         pendingClarifications: [],
         unresolvedFlags: [],
         humanOverrideIds: [],
+        memoryOverrideIds: [],
+        resolvedClarifications: {},
         runTimeline: [],
         auditTrail: [],
         totalTransactions: transactions.length,
@@ -306,6 +319,44 @@ const useRunStore = create((set, get) => ({
   retryStream: () => {
     get().stopStream();
     get().startStream();
+  },
+
+  reviseCategory: async (transactionId, category) => {
+    try {
+      const response = await apiRequest(`/runs/${get().threadId}/revise`, {
+        method: 'POST',
+        body: [{ transaction_id: transactionId, answer: category }],
+        headers: { 'Idempotency-Key': generateIdempotencyKey() },
+      });
+      set({ status: response.status });
+      // The run reopens and completes again; resubscribe for its fresh state.
+      get().retryStream();
+      return { ok: true };
+    } catch (error) {
+      const message = error.message || 'Failed to change the category.';
+      set((state) => ({ errors: [...state.errors, message] }));
+      return { ok: false, error: message };
+    }
+  },
+
+  loadMerchantMemory: async () => {
+    try {
+      const response = await apiRequest('/merchant-memory');
+      set({ merchantMemory: response.merchants || [] });
+    } catch {
+      // Memory is a convenience; the upload flow works without it.
+    }
+  },
+
+  forgetMerchantMemory: async () => {
+    try {
+      await apiRequest('/merchant-memory', { method: 'DELETE' });
+      set({ merchantMemory: [] });
+      return true;
+    } catch (error) {
+      set({ errors: [error.message || 'Failed to clear reviewer memory.'] });
+      return false;
+    }
   },
 
   resolveTransaction: async (transactionId, categoryAnswer) => {

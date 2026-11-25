@@ -76,6 +76,27 @@ class ProgressStore:
             'Global progress reset was removed; delete an owner-scoped run.'
         )
 
+    def remembered_categories(
+        self,
+        run_id: str,
+        merchant_keys: set[str],
+    ) -> dict[str, dict[str, str]]:
+        """Reviewer memory for the run's owner; empty for unknown runs."""
+        if not merchant_keys:
+            return {}
+        try:
+            owner_id = run_store.get(run_id).owner_id
+        except RunNotFoundError:
+            return {}
+        return run_store.merchant_memory(owner_id, merchant_keys)
+
+    def record_memory_resolutions(
+        self,
+        run_id: str,
+        decisions: list[dict[str, str]],
+    ) -> list[str]:
+        return run_store.record_memory_resolutions(run_id, decisions)
+
     def consume_provider_budget(
         self,
         run_id: str,

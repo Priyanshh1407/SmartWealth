@@ -8,6 +8,7 @@ from typing import Any, Iterable
 from langgraph.types import Command
 
 from backend.app.graph.state import Transaction
+from backend.app.merchants import is_memorable_merchant, merchant_key
 from backend.app.observability import bind_run, metrics, trace_span
 from backend.app.runs.executor import BoundedRunExecutor
 from backend.app.runs.models import (
@@ -86,6 +87,35 @@ class RunService:
             'current_node': 'init',
             'errors': [],
         }
+
+    def _memory_entries(
+        self,
+        run_id: str,
+        answers: list[dict[str, str]],
+    ) -> list[dict[str, str]]:
+        """Merchant decisions worth remembering; placeholders never are."""
+        try:
+            snapshot = self.graph.get_state(self._config(run_id))
+            transactions = snapshot.values.get('transactions', [])
+        except Exception:
+            transactions = []
+        merchants = {
+            str(_model_dump(item).get('transaction_id')): str(
+                _model_dump(item).get('merchant', '')
+            )
+            for item in transactions
+        }
+        entries = {}
+        for answer in answers:
+            merchant = merchants.get(str(answer['transaction_id']), '')
+            if is_memorable_merchant(merchant):
+                entries[merchant_key(merchant)] = {
+                    'merchant_key': merchant_key(merchant),
+                    'merchant': merchant,
+                    'category': str(answer['answer']),
+                    'transaction_id': str(answer['transaction_id']),
+                }
+        return list(entries.values())
 
     def _override_context(
         self,
@@ -200,8 +230,68 @@ class RunService:
         answers: list[dict[str, str]],
         correlation_id: str = 'unassigned',
     ) -> tuple[RunRecord, bool]:
+        return self._decide(
+            operation=f'resume:{run_id}',
+            reserve=self.store.reserve_resume,
+            execute=self._execute_resume,
+            run_id=run_id,
+            owner_id=owner_id,
+            idempotency_key=idempotency_key,
+            answers=answers,
+            correlation_id=correlation_id,
+        )
+
+    def revise(
+        self,
+        *,
+        run_id: str,
+        owner_id: str,
+        idempotency_key: str,
+        answers: list[dict[str, str]],
+        correlation_id: str = 'unassigned',
+    ) -> tuple[RunRecord, bool]:
+        """Change categories on a completed run and recalculate its report."""
+        self.store.get(run_id, owner_id)
+        try:
+            values = self.graph.get_state(self._config(run_id)).values or {}
+        except Exception:
+            values = {}
+        known = {
+            str(_model_dump(item).get('transaction_id'))
+            for item in values.get('transactions', [])
+        }
+        unknown = [
+            answer['transaction_id'] for answer in answers
+            if str(answer['transaction_id']) not in known
+        ]
+        if unknown:
+            raise InvalidTransitionError(
+                'Category changes must reference transactions in this run.'
+            )
+        return self._decide(
+            operation=f'revise:{run_id}',
+            reserve=self.store.reserve_revision,
+            execute=self._execute_revision,
+            run_id=run_id,
+            owner_id=owner_id,
+            idempotency_key=idempotency_key,
+            answers=answers,
+            correlation_id=correlation_id,
+        )
+
+    def _decide(
+        self,
+        *,
+        operation: str,
+        reserve: Any,
+        execute: Any,
+        run_id: str,
+        owner_id: str,
+        idempotency_key: str,
+        answers: list[dict[str, str]],
+        correlation_id: str,
+    ) -> tuple[RunRecord, bool]:
         digest = request_hash(answers)
-        operation = f'resume:{run_id}'
         existing = self.store.find_idempotent(
             owner_id,
             operation,
@@ -213,24 +303,20 @@ class RunService:
 
         self._reserve_capacity()
         try:
-            record, replayed = self.store.reserve_resume(
+            record, replayed = reserve(
                 run_id=run_id,
                 owner_id=owner_id,
                 idempotency_key=idempotency_key,
                 request_hash=digest,
                 answers=answers,
                 override_context=self._override_context(run_id, answers),
+                memory_entries=self._memory_entries(run_id, answers),
                 correlation_id=correlation_id,
             )
             if replayed:
                 self.executor.release_reservation()
                 return record, True
-            self._submit_reserved(
-                run_id,
-                self._execute_resume,
-                run_id,
-                answers,
-            )
+            self._submit_reserved(run_id, execute, run_id, answers)
             return record, False
         except Exception:
             self.executor.release_reservation()
@@ -264,6 +350,38 @@ class RunService:
         if record.status != RunStatus.RUNNING:
             return
         self._drive_graph(run_id, Command(resume=answers))
+
+    def _execute_revision(
+        self,
+        run_id: str,
+        answers: list[dict[str, str]],
+    ) -> None:
+        record = self.store.get(run_id)
+        if record.status != RunStatus.RUNNING:
+            return
+        config = self._config(run_id)
+        values = self.graph.get_state(config).values
+        changed = {
+            str(answer['transaction_id']): str(answer['answer'])
+            for answer in answers
+        }
+        # Write the decisions as if the review step produced them, so the
+        # graph's own edges run corrective RAG and the report again.
+        self.graph.update_state(
+            config,
+            {
+                'resolved_clarifications': {
+                    **values.get('resolved_clarifications', {}),
+                    **changed,
+                },
+                'unresolved_flags': [
+                    txn_id for txn_id in values.get('unresolved_flags', [])
+                    if txn_id not in changed
+                ],
+            },
+            as_node='auditor_loop',
+        )
+        self._drive_graph(run_id, None)
 
     def _execute_recovery(self, run_id: str, graph_input: Any) -> None:
         record = self.store.get(run_id)
@@ -484,6 +602,12 @@ class RunService:
             )
         self.store.delete(run_id, owner_id)
 
+    def merchant_memory(self, owner_id: str) -> list[dict[str, str]]:
+        return list(self.store.merchant_memory(owner_id).values())
+
+    def clear_merchant_memory(self, owner_id: str) -> int:
+        return self.store.clear_merchant_memory(owner_id)
+
     def purge(self) -> int:
         return self.store.purge_all()
 
@@ -522,11 +646,22 @@ class RunService:
         progress['completed'] = record.status == RunStatus.COMPLETED
         audit_trail = self.store.audit_events(run_id, owner_id)
         run_timeline = self.store.timeline_events(run_id, owner_id)
-        human_override_ids = list(dict.fromkeys(
-            event['transaction_id']
-            for event in audit_trail
-            if event['event_type'] == 'human_override'
-        ))
+        # The latest decision per row says who set its current category. The
+        # audit trail is written before the graph pauses, so it is also the
+        # freshest source for categories a paused node has not returned yet.
+        decided_by: dict[str, str] = {}
+        decided_category: dict[str, str] = {}
+        for event in audit_trail:
+            decided_by[event['transaction_id']] = event['event_type']
+            decided_category[event['transaction_id']] = event['answer']
+        human_override_ids = [
+            txn_id for txn_id, event_type in decided_by.items()
+            if event_type in {'human_override', 'human_revision'}
+        ]
+        memory_override_ids = [
+            txn_id for txn_id, event_type in decided_by.items()
+            if event_type == 'memory_override'
+        ]
         return {
             **record.public_dict(),
             'transactions': [
@@ -545,7 +680,12 @@ class RunService:
                 _model_dump(value) for value in pending
             ],
             'unresolved_flags': values.get('unresolved_flags', []),
+            'resolved_clarifications': {
+                **values.get('resolved_clarifications', {}),
+                **decided_category,
+            },
             'human_override_ids': human_override_ids,
+            'memory_override_ids': memory_override_ids,
             'run_timeline': run_timeline,
             'audit_trail': audit_trail,
             'final_report': (

@@ -76,6 +76,58 @@ async def resume_graph(
     }
 
 
+@router.post('/runs/{run_id}/revise', status_code=status.HTTP_202_ACCEPTED)
+async def revise_categories(
+    run_id: str,
+    answers: Annotated[
+        list[ClarificationAnswer],
+        Body(min_length=1),
+    ],
+    response: Response,
+    request: Request,
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+    idempotency_key: Annotated[
+        str,
+        Header(alias='Idempotency-Key', min_length=8, max_length=128),
+    ],
+):
+    """Change categories on a completed run; its report is recalculated."""
+    payload = [answer.model_dump(mode='json') for answer in answers]
+    try:
+        record, replayed = run_service.revise(
+            run_id=run_id,
+            owner_id=owner_id,
+            idempotency_key=idempotency_key,
+            answers=payload,
+            correlation_id=getattr(
+                request.state,
+                'correlation_id',
+                'unassigned',
+            ),
+        )
+    except Exception as error:
+        raise lifecycle_http_error(error) from error
+    response.headers['Idempotency-Replayed'] = str(replayed).lower()
+    return {
+        **record.public_dict(),
+        'replayed': replayed,
+    }
+
+
+@router.get('/merchant-memory')
+async def get_merchant_memory(
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    return {'merchants': run_service.merchant_memory(owner_id)}
+
+
+@router.delete('/merchant-memory')
+async def clear_merchant_memory(
+    owner_id: Annotated[str, Depends(get_workspace_owner)],
+):
+    return {'forgotten': run_service.clear_merchant_memory(owner_id)}
+
+
 @router.get('/runs/{run_id}/audit')
 async def get_human_override_audit(
     run_id: str,

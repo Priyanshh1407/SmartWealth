@@ -7,11 +7,18 @@ const STAGE_LABELS = {
   extraction_node: 'Classified',
   auditor_loop: 'Waiting',
   resume: 'Resumed',
+  revision: 'Category changed',
   corrective_rag: 'RAG review',
   report: 'Report',
   completed: 'Completed',
   failed: 'Failed',
   cancelled: 'Cancelled',
+};
+
+const DECISION_LABELS = {
+  human_override: 'Reviewer answer',
+  memory_override: 'Applied from reviewer memory',
+  human_revision: 'Category changed after completion',
 };
 
 const timeLabel = (value) => {
@@ -72,7 +79,7 @@ const RunTimeline = ({ events, auditTrail }) => (
 
     {auditTrail.length > 0 && (
       <div className="mt-md border-t border-white/10 pt-sm">
-        <p className="font-label-caps text-secondary text-[9px]">Human override audit</p>
+        <p className="font-label-caps text-secondary text-[9px]">Category decision audit</p>
         <div className="mt-xs space-y-xs">
           {auditTrail.map((event) => (
             <article key={event.event_id} className="rounded-lg border border-secondary/20 bg-secondary/5 p-xs">
@@ -80,6 +87,9 @@ const RunTimeline = ({ events, auditTrail }) => (
                 <span className="font-mono text-secondary">{event.transaction_id}</span>
                 <time className="text-outline">{timeLabel(event.occurred_at)}</time>
               </div>
+              <p className="mt-1 text-[9px] font-bold uppercase tracking-wide text-outline">
+                {DECISION_LABELS[event.event_type] || event.event_type}
+              </p>
               <p className="mt-1 text-[10px] text-on-surface-variant">
                 <span className="text-outline">{event.prior_prediction}</span>
                 {' → '}

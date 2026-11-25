@@ -21,6 +21,11 @@ const NODE_LABELS = {
   extraction_node: 'Extraction Complete',
 };
 
+// Mirrors backend/app/merchants.py: these never form a reviewer memory.
+const PLACEHOLDER_MERCHANTS = new Set([
+  '', 'unknown', 'misc chrg', 'misc charge', 'pos debit', 'pos purchase', 'n/a', 'na', '???',
+]);
+
 const Dashboard = () => {
   const {
     status,
@@ -32,6 +37,11 @@ const Dashboard = () => {
     totalDeductible,
     averageModelConfidence,
     humanOverrideIds,
+    memoryOverrideIds,
+    resolvedClarifications,
+    merchantMemory,
+    loadMerchantMemory,
+    forgetMerchantMemory,
     runTimeline,
     auditTrail,
     evaluationSummary,
@@ -118,10 +128,15 @@ const Dashboard = () => {
           clarificationQuestion: firstPending.question || "AI confidence below threshold. Manual review required."
         });
       }
-    } else if (pendingClarifications.length === 0) {
+    } else if (pendingClarifications.length === 0 && selectedTxn?.mode !== 'revise') {
       setSelectedTxn(null);
     }
   }, [pendingClarifications, selectedTxn, status, transactionById]);
+
+  // Learned merchants are shown on the upload screen so a demo can start fresh.
+  useEffect(() => {
+    if (status === 'idle') void loadMerchantMemory();
+  }, [loadMerchantMemory, status]);
 
   const tableData = useMemo(() => {
     const categoryById = new Map(categorized.map((item) => [item.transaction_id, item]));
@@ -132,6 +147,12 @@ const Dashboard = () => {
       (item) => [item.transaction_id, item],
     ));
     const overrideIds = new Set(humanOverrideIds);
+    const memoryIds = new Set(memoryOverrideIds);
+    const rowsPerCategory = new Map();
+    for (const item of deductibilityResults) {
+      const category = categoryById.get(item.transaction_id)?.predicted_category;
+      rowsPerCategory.set(category, (rowsPerCategory.get(category) || 0) + 1);
+    }
 
     return transactions.map((txn) => {
       const cat = categoryById.get(txn.transaction_id);
@@ -161,20 +182,49 @@ const Dashboard = () => {
       }
     }
 
+      // A reviewer decision (typed or remembered) wins over the model's guess
+      // even before the tax step has re-run.
+      const category = resolvedClarifications[txn.transaction_id]
+        || (cat ? cat.predicted_category : 'Processing…');
       return {
         ...txn,
         id: txn.transaction_id,
-        category: cat ? cat.predicted_category : 'Processing…',
+        category,
         confidence: cat ? cat.confidence_score : 0,
         status: txnStatus,
         treatment: ded?.treatment,
         evidence: ded?.evidence,
         reasoning: ded?.reasoning,
+        allowedAmount: ded?.allowed_current_period_amount,
+        reviewReasons: ded?.review_reasons || [],
+        rowsSharingRule: ded ? rowsPerCategory.get(cat?.predicted_category) || 1 : 0,
         humanOverridden: overrideIds.has(txn.transaction_id),
+        memoryResolved: memoryIds.has(txn.transaction_id),
         clarificationQuestion: isPending?.question || 'Model confidence is below the review threshold.',
       };
     });
-  }, [categorized, deductibilityResults, humanOverrideIds, pendingClarifications, transactions]);
+  }, [
+    categorized,
+    deductibilityResults,
+    humanOverrideIds,
+    memoryOverrideIds,
+    pendingClarifications,
+    resolvedClarifications,
+    transactions,
+  ]);
+
+  // Other open reviews for the same merchant are answered by the same decision.
+  const samePendingMerchantCount = useMemo(() => {
+    if (!selectedTxn || selectedTxn.mode === 'revise') return 0;
+    const key = (merchant) => String(merchant || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const selectedKey = key(selectedTxn.merchant);
+    if (PLACEHOLDER_MERCHANTS.has(selectedKey)) return 0;
+    return pendingClarifications.filter((item) => {
+      const id = item.transaction_id || item;
+      return id !== (selectedTxn.transaction_id || selectedTxn.id)
+        && key(transactionById.get(id)?.merchant) === selectedKey;
+    }).length;
+  }, [pendingClarifications, selectedTxn, transactionById]);
 
   // Progress bar percentage
   const progressPercent = progress && progress.total > 0
@@ -560,7 +610,24 @@ const Dashboard = () => {
         status === 'idle' && transactions.length === 0 ? '' : 'xl:flex-none xl:h-[max(760px,calc(100dvh_-_170px))]'
       }`}>
         {status === 'idle' && transactions.length === 0 ? (
-          <div className="xl:col-span-12 h-full flex flex-col animate-fade-scale">
+          <div className="xl:col-span-12 h-full flex flex-col gap-sm animate-fade-scale">
+            {merchantMemory.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-sm rounded-xl border border-secondary/20 bg-secondary/5 px-md py-sm text-xs text-on-surface-variant">
+                <p>
+                  <span className="font-semibold text-secondary">Reviewer memory:</span>{' '}
+                  {merchantMemory.length} merchant{merchantMemory.length > 1 ? 's' : ''} learned
+                  ({merchantMemory.map((item) => `${item.merchant} → ${item.category}`).join(', ')}).
+                  They won't be asked about again.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void forgetMerchantMemory()}
+                  className="rounded-md border border-secondary/30 px-2 py-1 font-bold text-secondary hover:bg-secondary/10"
+                >
+                  Forget learned merchants
+                </button>
+              </div>
+            )}
             <UploadZone onStartAudit={runAudit} />
           </div>
         ) : (
@@ -625,6 +692,9 @@ const Dashboard = () => {
                     transactions={tableData}
                     onResolve={(txn) => setSelectedTxn(txn)}
                     onViewEvidence={(txn) => setEvidenceTxn(txn)}
+                    onChangeCategory={status === 'completed'
+                      ? (txn) => setSelectedTxn({ ...txn, mode: 'revise' })
+                      : undefined}
                   />
                 </div>
               </section>
@@ -632,7 +702,11 @@ const Dashboard = () => {
 
             {/* Right Column: AI Auditor Panel */}
             <div className="xl:col-span-4 flex min-h-0 flex-col gap-gutter">
-              <AuditorPanel transaction={selectedTxn} onResolved={() => setSelectedTxn(null)} />
+              <AuditorPanel
+                transaction={selectedTxn}
+                samePendingMerchantCount={samePendingMerchantCount}
+                onResolved={() => setSelectedTxn(null)}
+              />
               <RunTimeline events={runTimeline} auditTrail={auditTrail} />
             </div>
           </>

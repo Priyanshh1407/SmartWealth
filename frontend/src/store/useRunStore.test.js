@@ -153,6 +153,39 @@ describe('run store reliability', () => {
     useRunStore.getState().stopStream();
   });
 
+  it('reopens a completed run to change a category and resyncs its state', async () => {
+    useRunStore.setState({ threadId: 'run-1', status: 'completed' });
+    apiRequest.mockResolvedValueOnce({ run_id: 'run-1', status: 'running' });
+    streamRun.mockImplementation(async (_runId, { onEvent, signal }) => {
+      onEvent({ event: 'snapshot', data: { status: 'completed', human_override_ids: ['txn-1'] } });
+      await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+    });
+
+    expect(await useRunStore.getState().reviseCategory('txn-1', 'Entertainment'))
+      .toEqual({ ok: true });
+
+    expect(apiRequest).toHaveBeenCalledWith('/runs/run-1/revise', expect.objectContaining({
+      method: 'POST',
+      body: [{ transaction_id: 'txn-1', answer: 'Entertainment' }],
+    }));
+    await vi.waitFor(() => expect(useRunStore.getState().humanOverrideIds).toEqual(['txn-1']));
+    useRunStore.getState().stopStream();
+  });
+
+  it('excludes remembered categories from average model confidence', () => {
+    useRunStore.getState().applyServerUpdate({
+      categorized: [
+        { transaction_id: 'a', confidence_score: 0.8 },
+        { transaction_id: 'b', confidence_score: 1 },
+      ],
+      deductibility_results: [],
+      human_override_ids: [],
+      memory_override_ids: ['b'],
+    });
+
+    expect(useRunStore.getState().averageModelConfidence).toBe(80);
+  });
+
   const httpError = (status, message) => Object.assign(new Error(message), { status });
 
   it('resets even when the server no longer has the run', async () => {

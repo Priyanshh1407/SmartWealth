@@ -25,6 +25,7 @@ from backend.app.progress import progress_store
 from backend.app.rag.grader import get_retrieval_grader
 from backend.app.rag.versioning import chroma_release_path, collection_name
 from backend.app.errors import ProviderBudgetError
+from backend.app.merchants import PURPOSE_PLACEHOLDERS
 from backend.app.resilience import (
     CircuitBreaker,
     RetryPolicy,
@@ -123,17 +124,6 @@ POSITIVE_TREATMENTS = {
     TaxTreatment.DEDUCTIBLE,
     TaxTreatment.DEPRECIABLE,
     TaxTreatment.PARTIALLY_DEDUCTIBLE,
-}
-PURPOSE_PLACEHOLDERS = {
-    '',
-    'unknown',
-    'misc chrg',
-    'misc charge',
-    'pos debit',
-    'pos purchase',
-    'n/a',
-    'na',
-    '???',
 }
 
 

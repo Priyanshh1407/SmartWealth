@@ -14,7 +14,7 @@ const PENDING_LABELS = {
   processing: 'Processing',
 };
 
-const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
+const TransactionTable = ({ transactions, onResolve, onViewEvidence, onChangeCategory }) => (
   <table className="w-full text-left border-collapse min-w-[860px]">
     <thead className="sticky top-0 bg-background/95 backdrop-blur-sm z-10">
       <tr className="border-b border-white/10 text-outline font-label-caps">
@@ -44,9 +44,28 @@ const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
             <td className="py-sm pr-md text-right font-mono text-on-surface">₹{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
             <td className={`py-sm pr-md ${needsAction ? 'text-tertiary' : 'text-on-surface-variant'}`}>
               {transaction.category}
+              {onChangeCategory && (
+                <button
+                  type="button"
+                  onClick={() => onChangeCategory(transaction)}
+                  aria-label={`Change category for ${transaction.merchant} on ${transaction.date}`}
+                  title="Change category"
+                  className="ml-xs inline-flex align-middle rounded border border-white/10 px-1 text-outline hover:border-primary/40 hover:text-primary"
+                >
+                  <span className="material-symbols-outlined text-[14px]" aria-hidden="true">edit</span>
+                </button>
+              )}
               {transaction.humanOverridden && (
                 <span className="ml-xs inline-flex rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-secondary">
                   Human override
+                </span>
+              )}
+              {transaction.memoryResolved && (
+                <span
+                  title="Category applied from an earlier reviewer decision for this merchant"
+                  className="ml-xs inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary"
+                >
+                  From reviewer memory
                 </span>
               )}
             </td>

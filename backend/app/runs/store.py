@@ -127,6 +127,16 @@ class RunStore:
                 );
                 CREATE INDEX IF NOT EXISTS sw_run_event_timeline
                     ON sw_run_events(run_id, occurred_at, event_id);
+                CREATE TABLE IF NOT EXISTS sw_merchant_memory (
+                    owner_id TEXT NOT NULL,
+                    merchant_key TEXT NOT NULL,
+                    merchant TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    source_run_id TEXT NOT NULL,
+                    source_transaction_id TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (owner_id, merchant_key)
+                );
                 '''
             )
             self._ensure_column(
@@ -454,18 +464,52 @@ class RunStore:
             connection.commit()
             return record, False
 
-    def reserve_resume(
+    def reserve_resume(self, *, run_id: str, **kwargs: Any) -> tuple[RunRecord, bool]:
+        return self._reserve_decision(
+            run_id=run_id,
+            operation=f'resume:{run_id}',
+            required_status=RunStatus.WAITING_FOR_INPUT,
+            event_type='human_override',
+            node='resume',
+            progress_message='Resuming audit.',
+            timeline_event='run_resumed',
+            timeline_message='Human clarification accepted; run resumed.',
+            **kwargs,
+        )
+
+    def reserve_revision(self, *, run_id: str, **kwargs: Any) -> tuple[RunRecord, bool]:
+        """Reopen a completed run so changed categories are re-evaluated."""
+        return self._reserve_decision(
+            run_id=run_id,
+            operation=f'revise:{run_id}',
+            required_status=RunStatus.COMPLETED,
+            event_type='human_revision',
+            node='revision',
+            progress_message='Applying category changes.',
+            timeline_event='run_revised',
+            timeline_message='Reviewer changed categories; tax treatment is being recalculated.',
+            **kwargs,
+        )
+
+    def _reserve_decision(
         self,
         *,
         run_id: str,
+        operation: str,
+        required_status: RunStatus,
+        event_type: str,
+        node: str,
+        progress_message: str,
+        timeline_event: str,
+        timeline_message: str,
         owner_id: str,
         idempotency_key: str,
         request_hash: str,
         answers: list[dict[str, str]] | None = None,
         override_context: dict[str, dict[str, str]] | None = None,
+        memory_entries: list[dict[str, str]] | None = None,
         correlation_id: str = 'unassigned',
     ) -> tuple[RunRecord, bool]:
-        operation = f'resume:{run_id}'
         now = utc_now()
         with self._connection() as connection:
             connection.execute('BEGIN IMMEDIATE')
@@ -486,16 +530,18 @@ class RunStore:
                     )
                 connection.commit()
                 return self._row_to_record(row), True
-            if RunStatus(row['status']) != RunStatus.WAITING_FOR_INPUT:
+            if RunStatus(row['status']) != required_status:
                 connection.rollback()
                 raise InvalidTransitionError(
                     'Only a run waiting for input can be resumed.'
+                    if required_status == RunStatus.WAITING_FOR_INPUT
+                    else 'Only a completed run can have categories changed.'
                 )
             updated = connection.execute(
                 '''
                 UPDATE sw_runs
                 SET status = ?, updated_at = ?, started_at = COALESCE(started_at, ?),
-                    current_node = 'resume', progress_message = 'Resuming audit.',
+                    completed_at = NULL, current_node = ?, progress_message = ?,
                     version = version + 1
                 WHERE run_id = ? AND version = ? AND status = ?
                 ''',
@@ -503,15 +549,17 @@ class RunStore:
                     RunStatus.RUNNING.value,
                     now,
                     now,
+                    node,
+                    progress_message,
                     run_id,
                     row['version'],
-                    RunStatus.WAITING_FOR_INPUT.value,
+                    required_status.value,
                 ),
             )
             if updated.rowcount != 1:
                 connection.rollback()
                 raise InvalidTransitionError(
-                    'Run state changed before resume could be accepted.'
+                    'Run state changed before the request could be accepted.'
                 )
             connection.execute(
                 '''
@@ -529,71 +577,39 @@ class RunStore:
                     now,
                 ),
             )
-            previous = connection.execute(
-                '''
-                SELECT event_hash FROM sw_audit_events
-                WHERE run_id = ? ORDER BY occurred_at DESC LIMIT 1
-                ''',
-                (run_id,),
-            ).fetchone()
-            previous_hash = previous['event_hash'] if previous else 'GENESIS'
-            for answer in answers or []:
-                context = (override_context or {}).get(
-                    str(answer['transaction_id']),
-                    {},
-                )
-                prior_prediction = context.get('prior_prediction', 'Unknown')
-                downstream_impact = context.get(
-                    'downstream_impact',
-                    'Tax treatment and report will be recalculated.',
-                )
-                occurred_at = utc_now()
-                event_id = str(uuid.uuid4())
-                material = '|'.join([
-                    previous_hash,
-                    event_id,
-                    run_id,
-                    owner_id,
-                    str(answer['transaction_id']),
-                    str(answer['answer']),
-                    prior_prediction,
-                    downstream_impact,
-                    occurred_at,
-                    correlation_id,
-                ])
-                event_hash = sha256(material.encode('utf-8')).hexdigest()
-                connection.execute(
-                    '''
-                    INSERT INTO sw_audit_events (
-                        event_id, run_id, owner_id, event_type,
-                        transaction_id, answer, prior_prediction,
-                        downstream_impact, occurred_at, correlation_id,
-                        previous_hash, event_hash
-                    ) VALUES (?, ?, ?, 'human_override', ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''',
-                    (
-                        event_id,
-                        run_id,
-                        owner_id,
-                        answer['transaction_id'],
-                        answer['answer'],
-                        prior_prediction,
-                        downstream_impact,
-                        occurred_at,
-                        correlation_id,
-                        previous_hash,
-                        event_hash,
-                    ),
-                )
-                previous_hash = event_hash
+            self._append_audit_events(
+                connection,
+                run_id=run_id,
+                owner_id=owner_id,
+                event_type=event_type,
+                decisions=[
+                    {
+                        **(override_context or {}).get(
+                            str(answer['transaction_id']),
+                            {},
+                        ),
+                        'transaction_id': answer['transaction_id'],
+                        'answer': answer['answer'],
+                    }
+                    for answer in answers or []
+                ],
+                correlation_id=correlation_id,
+            )
+            self._upsert_merchant_memory(
+                connection,
+                owner_id=owner_id,
+                run_id=run_id,
+                entries=memory_entries or [],
+                now=now,
+            )
             self._append_run_event(
                 connection,
                 run_id=run_id,
                 owner_id=owner_id,
-                event_type='run_resumed',
-                stage='resume',
+                event_type=timeline_event,
+                stage=node,
                 status=RunStatus.RUNNING.value,
-                message='Human clarification accepted; run resumed.',
+                message=timeline_message,
                 details={'override_count': len(answers or [])},
                 occurred_at=now,
             )
@@ -602,6 +618,179 @@ class RunStore:
             )
             connection.commit()
             return record, False
+
+    @staticmethod
+    def _append_audit_events(
+        connection: Any,
+        *,
+        run_id: str,
+        owner_id: str,
+        event_type: str,
+        decisions: list[dict[str, str]],
+        correlation_id: str,
+    ) -> None:
+        """Append category decisions to the run's SHA-256 hash chain."""
+        previous = connection.execute(
+            '''
+            SELECT event_hash FROM sw_audit_events
+            WHERE run_id = ? ORDER BY occurred_at DESC LIMIT 1
+            ''',
+            (run_id,),
+        ).fetchone()
+        previous_hash = previous['event_hash'] if previous else 'GENESIS'
+        for decision in decisions:
+            prior_prediction = decision.get('prior_prediction', 'Unknown')
+            downstream_impact = decision.get(
+                'downstream_impact',
+                'Tax treatment and report will be recalculated.',
+            )
+            occurred_at = utc_now()
+            event_id = str(uuid.uuid4())
+            material = '|'.join([
+                previous_hash,
+                event_id,
+                run_id,
+                owner_id,
+                str(decision['transaction_id']),
+                str(decision['answer']),
+                prior_prediction,
+                downstream_impact,
+                occurred_at,
+                correlation_id,
+            ])
+            event_hash = sha256(material.encode('utf-8')).hexdigest()
+            connection.execute(
+                '''
+                INSERT INTO sw_audit_events (
+                    event_id, run_id, owner_id, event_type,
+                    transaction_id, answer, prior_prediction,
+                    downstream_impact, occurred_at, correlation_id,
+                    previous_hash, event_hash
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    event_id,
+                    run_id,
+                    owner_id,
+                    event_type,
+                    decision['transaction_id'],
+                    decision['answer'],
+                    prior_prediction,
+                    downstream_impact,
+                    occurred_at,
+                    correlation_id,
+                    previous_hash,
+                    event_hash,
+                ),
+            )
+            previous_hash = event_hash
+
+    @staticmethod
+    def _upsert_merchant_memory(
+        connection: Any,
+        *,
+        owner_id: str,
+        run_id: str,
+        entries: list[dict[str, str]],
+        now: str,
+    ) -> None:
+        for entry in entries:
+            connection.execute(
+                '''
+                INSERT INTO sw_merchant_memory (
+                    owner_id, merchant_key, merchant, category,
+                    source_run_id, source_transaction_id, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (owner_id, merchant_key) DO UPDATE SET
+                    merchant = excluded.merchant,
+                    category = excluded.category,
+                    source_run_id = excluded.source_run_id,
+                    source_transaction_id = excluded.source_transaction_id,
+                    updated_at = excluded.updated_at
+                ''',
+                (
+                    owner_id,
+                    entry['merchant_key'],
+                    entry['merchant'],
+                    entry['category'],
+                    run_id,
+                    entry['transaction_id'],
+                    now,
+                ),
+            )
+
+    def merchant_memory(
+        self,
+        owner_id: str,
+        merchant_keys: Iterable[str] | None = None,
+    ) -> dict[str, dict[str, str]]:
+        """Return remembered categories keyed by normalised merchant."""
+        with self._connection() as connection:
+            rows = connection.execute(
+                '''
+                SELECT merchant_key, merchant, category, source_run_id,
+                    source_transaction_id, updated_at
+                FROM sw_merchant_memory WHERE owner_id = ?
+                ORDER BY merchant
+                ''',
+                (owner_id,),
+            ).fetchall()
+        wanted = None if merchant_keys is None else set(merchant_keys)
+        return {
+            row['merchant_key']: dict(row)
+            for row in rows
+            if wanted is None or row['merchant_key'] in wanted
+        }
+
+    def clear_merchant_memory(self, owner_id: str) -> int:
+        with self._connection() as connection:
+            deleted = connection.execute(
+                'DELETE FROM sw_merchant_memory WHERE owner_id = ?',
+                (owner_id,),
+            )
+            return deleted.rowcount
+
+    def record_memory_resolutions(
+        self,
+        run_id: str,
+        decisions: list[dict[str, str]],
+    ) -> list[str]:
+        """Audit categories applied from reviewer memory, once per row.
+
+        A graph node re-runs from the top after an interrupt, so rows that
+        already carry a memory or human decision in this run are skipped.
+        Returns the transaction IDs that were newly recorded.
+        """
+        if not decisions:
+            return []
+        with self._connection() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            try:
+                row = self._select_run(connection, run_id)
+            except RunNotFoundError:
+                connection.rollback()
+                return []
+            decided = {
+                existing['transaction_id']
+                for existing in connection.execute(
+                    'SELECT transaction_id FROM sw_audit_events WHERE run_id = ?',
+                    (run_id,),
+                ).fetchall()
+            }
+            new_decisions = [
+                decision for decision in decisions
+                if decision['transaction_id'] not in decided
+            ]
+            self._append_audit_events(
+                connection,
+                run_id=run_id,
+                owner_id=row['owner_id'],
+                event_type='memory_override',
+                decisions=new_decisions,
+                correlation_id='reviewer-memory',
+            )
+            connection.commit()
+            return [decision['transaction_id'] for decision in new_decisions]
 
     def transition(
         self,
