@@ -79,6 +79,20 @@ describe('Dashboard loaded-ledger layout', () => {
     expect(ledger).toHaveClass('flex-1', 'min-h-0', 'max-h-[65vh]', 'overflow-auto');
   });
 
+  it('keeps the wide-screen workspace a fixed height so new events scroll, not grow', () => {
+    render(<Dashboard />);
+
+    // flex-1 would override the height, and a percentage cap on the timeline
+    // resolved against a growing column, which made every resolve taller.
+    const workspace = screen.getByRole('main');
+    expect(workspace).toHaveClass('xl:flex-none', 'xl:h-[max(760px,calc(100dvh_-_170px))]');
+    expect(screen.getByRole('region', { name: 'Scrollable transaction ledger' }))
+      .toHaveClass('xl:max-h-none');
+    const timeline = screen.getByRole('heading', { name: 'Run timeline' }).closest('section');
+    expect(timeline).toHaveClass('flex-1', 'min-h-[200px]', 'overflow-y-auto');
+    expect(timeline.className).not.toContain('%');
+  });
+
   it('opens populated evidence in a viewport-level portal from the ledger button', async () => {
     const user = userEvent.setup();
     render(<Dashboard />);

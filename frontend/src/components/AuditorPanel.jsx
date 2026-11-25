@@ -17,7 +17,7 @@ const AuditorPanel = ({ transaction, onResolved }) => {
   // If no transaction is selected, show an empty state or hidden state
   if (!transaction) {
     return (
-      <aside className="min-h-[240px] flex-1 bg-background/40 backdrop-blur-md rounded-xl flex flex-col shadow-2xl relative overflow-hidden border border-white/5 items-center justify-center">
+      <aside className="min-h-[180px] shrink-0 bg-background/40 backdrop-blur-md rounded-xl flex flex-col shadow-2xl relative overflow-hidden border border-white/5 items-center justify-center">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] z-0 pointer-events-none"></div>
         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
           <span className="material-symbols-outlined text-outline text-[32px]">task_alt</span>
@@ -45,7 +45,7 @@ const AuditorPanel = ({ transaction, onResolved }) => {
   };
 
   return (
-    <aside aria-labelledby="clarification-title" className="min-h-[320px] flex-1 bg-background/40 backdrop-blur-md ai-border rounded-xl flex flex-col shadow-2xl relative overflow-hidden border border-white/5">
+    <aside aria-labelledby="clarification-title" className="shrink-0 bg-background/40 backdrop-blur-md ai-border rounded-xl flex flex-col shadow-2xl relative overflow-hidden border border-white/5">
       {/* decorative background elements for depth */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] z-0 pointer-events-none"></div>
       

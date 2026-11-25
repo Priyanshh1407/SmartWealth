@@ -554,7 +554,11 @@ const Dashboard = () => {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-gutter overflow-visible z-10 min-h-0">
+      {/* On wide screens the workspace has a fixed viewport-based height so the
+          ledger and timeline scroll inside it instead of growing with each event. */}
+      <main className={`flex-1 grid grid-cols-1 xl:grid-cols-12 gap-gutter overflow-visible z-10 min-h-0 ${
+        status === 'idle' && transactions.length === 0 ? '' : 'xl:flex-none xl:h-[max(760px,calc(100dvh_-_170px))]'
+      }`}>
         {status === 'idle' && transactions.length === 0 ? (
           <div className="xl:col-span-12 h-full flex flex-col animate-fade-scale">
             <UploadZone onStartAudit={runAudit} />
@@ -615,7 +619,7 @@ const Dashboard = () => {
                   role="region"
                   aria-label="Scrollable transaction ledger"
                   tabIndex={0}
-                  className="flex-1 min-h-0 max-h-[65vh] overflow-auto p-md pt-0 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+                  className="flex-1 min-h-0 max-h-[65vh] xl:max-h-none overflow-auto p-md pt-0 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
                 >
                   <TransactionTable
                     transactions={tableData}

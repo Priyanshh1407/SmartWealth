@@ -15,7 +15,7 @@ const PENDING_LABELS = {
 };
 
 const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
-  <table className="w-full text-left border-collapse min-w-[920px]">
+  <table className="w-full text-left border-collapse min-w-[860px]">
     <thead className="sticky top-0 bg-background/95 backdrop-blur-sm z-10">
       <tr className="border-b border-white/10 text-outline font-label-caps">
         <th scope="col" className="py-sm pr-md font-normal">Date</th>
@@ -87,9 +87,10 @@ const TransactionTable = ({ transactions, onResolve, onViewEvidence }) => (
                 <button
                   type="button"
                   onClick={() => onViewEvidence(transaction)}
-                  className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                  aria-label="Open evidence drawer"
+                  className="whitespace-nowrap rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
                 >
-                  Open evidence drawer
+                  View evidence
                 </button>
               ) : transaction.treatment ? (
                 <span className="text-xs text-outline">

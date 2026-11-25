@@ -26,7 +26,7 @@ const timeLabel = (value) => {
 const RunTimeline = ({ events, auditTrail }) => (
   <section
     aria-labelledby="run-timeline-title"
-    className="glass-card rounded-xl p-sm overflow-y-auto max-h-[45%] shrink-0"
+    className="glass-card rounded-xl p-sm overflow-y-auto flex-1 min-h-[200px] max-h-[420px] xl:max-h-none"
   >
     <div className="flex items-center justify-between border-b border-white/10 pb-xs">
       <div>
